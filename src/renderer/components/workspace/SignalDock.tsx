@@ -23,13 +23,14 @@ import { useSignalStore } from "@/stores/signal-store";
 
 /** Traffic-light dot colors + labels (shared with StatusBar). */
 const SIGNAL_DOT: Record<SignalState, string> = {
-  idle: "bg-zinc-500",
-  running: "bg-amber-400",
-  failed: "bg-red-500",
-  success: "bg-green-600",
+  idle: "bg-zinc-500 ring-2 ring-white/80",
+  running: "bg-amber-400 ring-2 ring-white/80",
+  failed: "bg-red-500 ring-2 ring-white/80",
+  success: "bg-green-600 ring-2 ring-white/80",
 };
 /** Off (0-count) dots — same hue, DARKER (like an unlit traffic light):
- *  bright red lit vs dark red off, NOT pale/pink. */
+ *  bright red lit vs dark red off, NOT pale/pink. No white ring — the
+ *  lit glow edge is what separates ON from OFF at a glance. */
 const SIGNAL_DIM: Record<SignalState, string> = {
   idle: "bg-zinc-400",
   running: "bg-yellow-700",
@@ -183,19 +184,19 @@ export default function SignalDock(): React.JSX.Element {
           {SIGNAL_ORDER.map((state) => (
             <div
               key={state}
-              className="flex flex-col items-center gap-1"
+              className="flex flex-col items-center gap-1.5"
               role="group"
               aria-label={SIGNAL_LABEL[state]}
             >
-              <div className="relative flex h-3.5 w-3.5 justify-center">
+              <div className="relative flex h-5 w-5 justify-center">
                 <span
-                  className={`absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full ${dotClass(
+                  className={`absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full ${dotClass(
                     state,
                     summary[state],
-                  )} ${state === "running" && summary[state] > 0 ? "animate-pulse" : ""}`}
+                  )}`}
                 />
               </div>
-              <span className="text-[10px] font-medium tabular-nums tracking-wide text-foreground/70">
+              <span className="text-xs font-semibold tabular-nums tracking-wide text-foreground/90">
                 {summary[state]}
               </span>
             </div>

@@ -33,7 +33,7 @@ export function detectSnapEdge({
 }
 
 /** 吸附后窄条的宽度（逻辑像素）。 */
-export const DOCK_COMPACT_WIDTH = 46;
+export const DOCK_COMPACT_WIDTH = 56;
 /** 吸附后贴边的留白（逻辑像素）。 */
 export const DOCK_EDGE_GAP = 0;
 
