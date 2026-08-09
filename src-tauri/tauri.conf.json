@@ -21,7 +21,7 @@
         "minWidth": 120,
         "minHeight": 200,
         "decorations": false,
-        "transparent": false,
+        "transparent": true,
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "resizable": true,
@@ -52,7 +52,9 @@
     "windows": {
       "nsis": {
         "displayLanguageSelector": false,
-        "languages": ["SimpChinese"]
+        "languages": [
+          "SimpChinese"
+        ]
       }
     }
   }
