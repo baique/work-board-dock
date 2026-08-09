@@ -34,9 +34,10 @@
 }
 
 /* ── Liquid Glass 材质（主体） ──
-   backdrop-filter: blur + saturate + 折射。半透明底色让背景透出。 */
+   backdrop-filter: blur + saturate + 折射。半透明底色让背景透出。
+   透明度 72%：主面板更实（用户反馈 55% 太透）；折射/高光保留。 */
 @utility glass {
-  background: color-mix(in srgb, var(--color-card) 55%, transparent);
+  background: color-mix(in srgb, hsl(var(--card)) 72%, transparent);
   backdrop-filter: blur(24px) saturate(180%) brightness(1.05);
   -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.05);
   /* 边缘高光：顶部捕光 + 底部暗边（模拟玻璃厚度） */
@@ -56,7 +57,7 @@
 
 /* 更强材质：导航/结构性表面 */
 @utility glass-strong {
-  background: color-mix(in srgb, var(--color-card) 68%, transparent);
+  background: color-mix(in srgb, hsl(var(--card)) 68%, transparent);
   backdrop-filter: url(#lg-refract) blur(32px) saturate(200%) brightness(1.08);
   -webkit-backdrop-filter: url(#lg-refract) blur(32px) saturate(200%) brightness(1.08);
   border-top: 1px solid rgba(255, 255, 255, 0.2);
@@ -66,9 +67,9 @@
 }
 
 /* ── 玻璃上的小片（计数器/弹卡/分组） ──
-   次级玻璃：半透明白 + 轻模糊，保持可读性 */
+   次级玻璃：半透明白 + 轻模糊，保持可读性。12% 更实（用户反馈太透）。 */
 @utility glass-chip {
-  background: color-mix(in srgb, white 8%, transparent);
+  background: color-mix(in srgb, white 12%, transparent);
   backdrop-filter: blur(12px) saturate(150%);
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   box-shadow:
@@ -119,7 +120,7 @@
   .glass,
   .glass-strong,
   .glass-chip {
-    background: var(--color-card);
+    background: var(--card);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     border-top: none;
