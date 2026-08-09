@@ -52,7 +52,7 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
         use windows_sys::Win32::Foundation::HWND;
         use windows_sys::Win32::UI::WindowsAndMessaging::{
             EnumWindows, FindWindowW, GetWindowLongPtrW, SendMessageW, SetParent, SetWindowPos,
-            HWND_BOTTOM, SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE,
+            HWND_NOTOPMOST, SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE,
         };
 
         const GWLP_HWND_PARENT: i32 = -8;
@@ -96,34 +96,20 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
         let Some(win) = app.get_webview_window("signal-dock") else {
             return Err("signal-dock window not found".into());
         };
-        unsafe {
-            // Tauri 的 hwnd() 返回 `windows` crate 的 HWND（元组结构体
-            // HWND(pub *mut c_void)）；windows-sys 的 HWND 是 *mut c_void 别名。
-            // 取 .0 指针后转成 windows-sys 类型统一使用。
-            let hwnd = win.hwnd().map_err(|_| "no hwnd".to_string())?.0 as HWND;
-            if enabled {
+        if enabled {
+            // 1) 先脱离置顶（Tauri 去掉 WS_EX_TOPMOST），否则挂在桌面上仍置顶。
+            let _ = win.set_always_on_top(false);
+            unsafe {
+                let hwnd = win.hwnd().map_err(|_| "no hwnd".to_string())?.0 as HWND;
                 let workerw = find_desktop_workerw();
                 if workerw.is_null() {
                     return Err("desktop worker not found".into());
                 }
-                // Sink under the desktop shell; no-activate so it never steals focus.
+                // 2) 再挂到桌面 WorkerW（此时窗口已非置顶，可被普通窗口覆盖）。
                 SetParent(hwnd, workerw);
                 SetWindowPos(
                     hwnd,
-                    HWND_BOTTOM,
-                    0,
-                    0,
-                    0,
-                    0,
-                    SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE,
-                );
-            } else {
-                // Detach from desktop; parent back to the normal owner so the
-                // window floats again (always-on-top re-enabled by frontend).
-                SetParent(hwnd, std::ptr::null_mut());
-                SetWindowPos(
-                    hwnd,
-                    HWND_BOTTOM,
+                    HWND_NOTOPMOST,
                     0,
                     0,
                     0,
@@ -131,6 +117,23 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
                     SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE,
                 );
             }
+        } else {
+            unsafe {
+                let hwnd = win.hwnd().map_err(|_| "no hwnd".to_string())?.0 as HWND;
+                // 先脱离开桌面父级，恢复正常窗口层级。
+                SetParent(hwnd, std::ptr::null_mut());
+                SetWindowPos(
+                    hwnd,
+                    HWND_NOTOPMOST,
+                    0,
+                    0,
+                    0,
+                    0,
+                    SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE,
+                );
+            }
+            // 再恢复置顶（Tauri 层）。
+            let _ = win.set_always_on_top(true);
         }
     }
     #[cfg(not(target_os = "windows"))]
