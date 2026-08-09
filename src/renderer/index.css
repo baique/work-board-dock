@@ -9,15 +9,15 @@
 
 @layer base {
   :root {
-    /* Background layers - Codex dark theme */
-    --background: 0 0% 7%; /* #121212 */
-    --foreground: 0 0% 90%;
+    /* Background layers — 非纯黑：iOS 26 Liquid Glass 需要有色的底层供玻璃折射 */
+    --background: 232 40% 14%; /* 深蓝紫底（非纯黑） */
+    --foreground: 0 0% 96%;
 
-    --card: 0 0% 11%;
-    --card-foreground: 0 0% 90%;
+    --card: 232 30% 18%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 90%;
+    --popover: 232 30% 18%;
+    --popover-foreground: 0 0% 96%;
 
     --primary: 217 91% 60%; /* #3B82F6 */
     --primary-foreground: 0 0% 100%;
@@ -79,6 +79,12 @@
     font-feature-settings: "cv11", "ss01", "ss03", "cv02", "tnum";
     font-variant-ligatures: contextual;
     overflow: hidden;
+    /* Liquid Glass 底层：iOS 26 风格多彩渐变壁纸（挂件窗口背后） */
+    background:
+      radial-gradient(120% 90% at 85% 0%, rgba(88, 86, 214, 0.5) 0%, transparent 55%),
+      radial-gradient(100% 80% at 10% 100%, rgba(255, 45, 85, 0.35) 0%, transparent 55%),
+      radial-gradient(120% 100% at 50% 50%, rgba(10, 132, 255, 0.25) 0%, transparent 60%),
+      linear-gradient(160deg, #1e1e4a 0%, #2d1b4e 40%, #1a1a3a 100%);
   }
 
   /* Press feedback for pressable elements — instant, subtle scale. */

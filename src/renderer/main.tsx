@@ -9,7 +9,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SignalDock from "@/components/workspace/SignalDock";
 import "./index.css";
 
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary context="红绿灯挂件">
