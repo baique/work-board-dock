@@ -68,20 +68,30 @@ export function useDockWindowBehavior(): {
   // 吸附窄条记住的 Y。
   const snapYRef = useRef<number | null>(readStored<number | null>(DOCK_SNAP_Y_KEY, null));
 
+  // 窗口几何操作序号：每次 applyGeometry 递增，异步完成时校验自己是否
+  // 还是最近一次调用 —— 旧调用（被新调用覆盖的）放弃 setSize，杜绝
+  // "快速收起/展开"时窗口尺寸与 UI 状态脱钩的竞态。
+  const geomSeqRef = useRef(0);
+
   // Apply the real window geometry for a compact/expanded transition.
   const applyGeometry = useCallback(
     (toCompact: boolean) => {
       if (!isTauri) return;
       const win = getCurrentWindow();
+      const seq = ++geomSeqRef.current;
       void (async () => {
         const monitor: Monitor | null = await primaryMonitor().catch(() => null);
         const scale = monitor?.scaleFactor ?? 1;
         const logicalW = monitor ? Math.round(monitor.size.width / scale) : window.screen.width;
         const logicalH = monitor ? Math.round(monitor.size.height / scale) : window.screen.height;
 
+        // 已被更新的调用覆盖：放弃本次几何变更（UI 已切换到最新状态）。
+        if (seq !== geomSeqRef.current) return;
+
         if (toCompact) {
           // 收起前快照展开位置（展开时恢复用）。
           const cur = await win.outerPosition().catch(() => null);
+          if (seq !== geomSeqRef.current) return;
           if (cur) {
             expandedPosRef.current = {
               x: Math.round(cur.x / scale),
@@ -100,9 +110,11 @@ export function useDockWindowBehavior(): {
           writeStored(DOCK_COMPACT_KEY, true);
           // 窄条固定尺寸：吸附态禁调大小。
           await win.setResizable(false).catch(() => {});
+          if (seq !== geomSeqRef.current) return;
           const y =
             snapYRef.current ?? Math.max(0, Math.round((logicalH - DOCK_COMPACT_HEIGHT) / 2));
           await win.setSize(new LogicalSize(DOCK_COMPACT_WIDTH, DOCK_COMPACT_HEIGHT));
+          if (seq !== geomSeqRef.current) return;
           await win.setPosition(new LogicalPosition(logicalW - DOCK_COMPACT_WIDTH, y));
         } else {
           // 展开回到记忆位置（fallback：右缘垂直居中）。
@@ -112,6 +124,7 @@ export function useDockWindowBehavior(): {
             y,
           };
           await win.setSize(new LogicalSize(DOCK_FULL_WIDTH, DOCK_FULL_HEIGHT));
+          if (seq !== geomSeqRef.current) return;
           await win.setPosition(new LogicalPosition(target.x, target.y));
           writeStored(DOCK_COMPACT_KEY, false);
           // 恢复可调大小。
@@ -135,22 +148,72 @@ export function useDockWindowBehavior(): {
 
   // 启动恢复：窗口从配置尺寸开始，应用记忆的展开位置（若无记忆则保持
   // Rust setup 的默认右缘垂直居中）。只跑一次（ref 守卫，biome lint）。
+  // 同时主动校验一次窗口宽度：若启动时已是窄条残留（上次异常退出），
+  // 立即把 UI 切到窄条态，避免"窗口窄条 / 内容展开"的错位。
   const restoredRef = useRef(false);
   useEffect(() => {
     if (!isTauri || restoredRef.current) return;
     restoredRef.current = true;
     const win = getCurrentWindow();
-    if (expandedPosRef.current) {
-      void win
-        .setPosition(new LogicalPosition(expandedPosRef.current.x, expandedPosRef.current.y))
-        .catch(() => {});
-    }
+    void (async () => {
+      const monitor: Monitor | null = await primaryMonitor().catch(() => null);
+      const scale = monitor?.scaleFactor ?? 1;
+      const size = await win.outerSize().catch(() => null);
+      if (size) {
+        const w = Math.round(size.width / scale);
+        const isNarrow = w <= 100;
+        if (isNarrow !== compactRef.current) {
+          compactRef.current = isNarrow;
+          setCompactState(isNarrow);
+        }
+      }
+      if (expandedPosRef.current) {
+        void win
+          .setPosition(new LogicalPosition(expandedPosRef.current.x, expandedPosRef.current.y))
+          .catch(() => {});
+      }
+    })();
   }, [isTauri]);
 
   // 吸附态保持贴边：拖动窄条松手（300ms 无移动）后贴回右缘，Y 保留用户
   // 停放位置。展开态自由拖动（不吸附）。
   const compactRef = useRef(compact);
   compactRef.current = compact;
+
+  // ── 自愈：窗口几何与 UI 状态强一致 ──
+  // 窗口尺寸变化时（用户拖拽调大小 / 系统恢复 / 残留状态），若宽度与
+  // compact 状态不匹配则立即纠正 UI。识别规则：宽度 ≤ 阈值 = 窄条；
+  // > 阈值 = 展开。这样即使 applyGeometry 异步失败/竞态产生不一致，
+  // 也会在下一次 resize 时自愈，无需重启软件。
+  const HEAL_THRESHOLD = 100; // 窄条 46 vs 展开 280 的判据
+  useEffect(() => {
+    if (!isTauri) return;
+    const win = getCurrentWindow();
+    let unlisten: (() => void) | null = null;
+    // 程序自身 setSize 也会触发 onResized —— 冷却防递归（含同步心跳）。
+    let suppressUntil = 0;
+    void win
+      .onResized(async ({ payload }) => {
+        if (Date.now() < suppressUntil) return;
+        const monitor: Monitor | null = await primaryMonitor().catch(() => null);
+        const scale = monitor?.scaleFactor ?? 1;
+        const w = Math.round(payload.width / scale);
+        const isNarrow = w <= HEAL_THRESHOLD;
+        if (isNarrow !== compactRef.current) {
+          // 几何与 UI 脱钩：纠正 UI（不动窗口，只切渲染态）。
+          suppressUntil = Date.now() + 500;
+          compactRef.current = isNarrow;
+          setCompactState(isNarrow);
+        }
+      })
+      .then((fn) => {
+        unlisten = fn;
+      });
+    return () => {
+      unlisten?.();
+    };
+  }, [isTauri]);
+
   useEffect(() => {
     if (!isTauri) return;
     const win = getCurrentWindow();
