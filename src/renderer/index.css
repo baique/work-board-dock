@@ -9,41 +9,41 @@
 
 @layer base {
   :root {
-    /* Background — 中性深色。Liquid Glass 是窗口透明，玻璃折射背后的
-       真实内容（桌面/窗口），不是应用内画壁纸。 */
-    --background: 220 20% 12%;
-    --foreground: 0 0% 96%;
+    /* Background — 浅色主题（iOS 26 Liquid Glass light mode）。
+       玻璃底为浅色，文字深色，高光更细腻。 */
+    --background: 220 25% 96%;
+    --foreground: 220 20% 18%;
 
-    --card: 220 18% 15%;
-    --card-foreground: 0 0% 96%;
+    --card: 220 30% 97%;
+    --card-foreground: 220 20% 18%;
 
-    --popover: 220 18% 15%;
-    --popover-foreground: 0 0% 96%;
+    --popover: 220 30% 97%;
+    --popover-foreground: 220 20% 18%;
 
-    --primary: 217 91% 60%; /* #3B82F6 */
+    --primary: 217 91% 50%; /* 稍深蓝（浅底上更醒目） */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 70%;
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 20% 30%;
 
-    --muted: 0 0% 18%;
-    --muted-foreground: 0 0% 50%;
+    --muted: 220 15% 93%;
+    --muted-foreground: 220 15% 45%;
 
-    --accent: 217 91% 60%;
+    --accent: 217 91% 50%;
     --accent-foreground: 0 0% 100%;
 
-    /* Status colors */
-    --destructive: 0 84% 60%;
+    /* Status colors — 浅底上稍深，保持辨识度 */
+    --destructive: 0 80% 50%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 60% 42%;
+    --success: 142 65% 38%;
     --success-foreground: 0 0% 100%;
-    --connection: 187 70% 45%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 10%;
+    --connection: 187 70% 40%;
+    --warning: 38 90% 45%;
+    --warning-foreground: 0 0% 100%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 217 91% 60%;
+    --border: 220 15% 85%;
+    --input: 220 15% 85%;
+    --ring: 217 91% 50%;
 
     --radius: 0.5rem;
 
@@ -51,15 +51,15 @@
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
-    /* Sidebar - darker than main content */
-    --sidebar-background: 0 0% 9%;
-    --sidebar-foreground: 0 0% 70%;
-    --sidebar-primary: 217 91% 60%;
+    /* Sidebar — 浅色 */
+    --sidebar-background: 220 20% 94%;
+    --sidebar-foreground: 220 20% 30%;
+    --sidebar-primary: 217 91% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 15%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 220 15% 90%;
+    --sidebar-accent-foreground: 220 20% 25%;
+    --sidebar-border: 220 15% 85%;
+    --sidebar-ring: 217 91% 50%;
   }
 }
 

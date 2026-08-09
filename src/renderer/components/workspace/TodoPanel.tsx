@@ -24,7 +24,7 @@ function TodoRow({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0 }}
       transition={spring}
-      className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
+      className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-black/[0.04] transition-colors"
     >
       <button
         type="button"
@@ -81,7 +81,7 @@ export function TodoPanel() {
   return (
     <div data-testid="todo-panel" className="flex h-full w-full flex-col">
       {/* 快速添加 */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.08]">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-black/[0.08]">
         <Plus size={15} className="shrink-0 text-muted-foreground" />
         <input
           value={title}
@@ -99,7 +99,7 @@ export function TodoPanel() {
         <div className="flex-1 min-h-0 overflow-y-auto px-2 py-2 space-y-0.5">
           {active.length === 0 && done.length === 0 && (
             <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.06]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/[0.04]">
                 <Check size={18} className="text-muted-foreground" />
               </div>
               <p className="text-xs text-muted-foreground">暂无待办</p>

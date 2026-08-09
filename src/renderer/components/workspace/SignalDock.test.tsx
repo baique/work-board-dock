@@ -88,7 +88,7 @@ describe("SignalDock", () => {
   it("dims lights whose count is zero (light off)", () => {
     // Empty summary: every counter is 0 → every dot must be the dim color.
     render(<SignalDock />);
-    const dims = document.querySelectorAll("span.bg-zinc-800");
+    const dims = document.querySelectorAll("span.bg-zinc-300");
     // 4 counter dots + (no sessions so no group headers).
     expect(dims.length).toBeGreaterThanOrEqual(4);
   });

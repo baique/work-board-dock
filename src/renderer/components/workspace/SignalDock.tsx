@@ -43,7 +43,7 @@ const SIGNAL_ORDER: SignalState[] = ["failed", "running", "idle", "success"];
  * >0 → lit color. Keeps the strip/counters readable when nothing is in a state.
  */
 function dotClass(state: SignalState, count: number): string {
-  if (count === 0) return "bg-zinc-800";
+  if (count === 0) return "bg-zinc-300";
   return SIGNAL_DOT[state];
 }
 
@@ -238,7 +238,7 @@ export default function SignalDock(): React.JSX.Element {
                   )} ${state === "running" && summary[state] > 0 ? "animate-pulse" : ""}`}
                 />
               </div>
-              <span className="text-[10px] font-medium tabular-nums tracking-wide text-white/70">
+              <span className="text-[10px] font-medium tabular-nums tracking-wide text-foreground/70">
                 {summary[state]}
               </span>
             </div>
@@ -248,7 +248,7 @@ export default function SignalDock(): React.JSX.Element {
           <button
             type="button"
             onClick={() => setCompact(false)}
-            className="mt-1 rounded-full p-1.5 text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+            className="mt-1 rounded-full p-1.5 text-muted-foreground hover:bg-black/5 hover:text-foreground transition-colors"
             aria-label="展开"
             title="展开红绿灯"
             style={titlebarNoDragStyle}
@@ -265,18 +265,18 @@ export default function SignalDock(): React.JSX.Element {
     <>
       <LiquidGlassDefs />
       <div
-        className="flex h-screen w-screen flex-col glass glass-highlight text-white select-none overflow-hidden"
+        className="flex h-screen w-screen flex-col glass glass-highlight text-foreground select-none overflow-hidden"
         data-testid="signal-dock"
       >
         {/* Header (draggable — borderless window) */}
         <div
-          className="z-30 flex items-center justify-between px-3 py-2.5 border-b border-white/[0.08]"
+          className="z-30 flex items-center justify-between px-3 py-2.5 border-b border-black/[0.08]"
           data-tauri-drag-region
         >
-          <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-white/90">
-            <Bell size={13} className="text-white/60" />
+          <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-foreground">
+            <Bell size={13} className="text-foreground/60" />
             红绿灯
-            <span className="ml-1 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] tabular-nums tracking-wide text-white/70">
+            <span className="ml-1 rounded-full bg-black/5 px-1.5 py-0.5 text-[10px] tabular-nums tracking-wide text-foreground/70">
               {summary.total}
             </span>
           </div>
@@ -284,7 +284,7 @@ export default function SignalDock(): React.JSX.Element {
             <button
               type="button"
               onClick={() => setCompact(true)}
-              className="rounded p-1 text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+              className="rounded p-1 text-muted-foreground hover:bg-black/5 hover:text-foreground transition-colors"
               aria-label="收起"
               title="收起到窄条（手动）"
             >
@@ -298,7 +298,7 @@ export default function SignalDock(): React.JSX.Element {
           {SIGNAL_ORDER.map((state) => (
             <div
               key={state}
-              className="flex flex-col items-center gap-1 rounded-xl glass-chip glass-highlight px-1 py-1.5 transition-colors hover:bg-white/[0.12]"
+              className="flex flex-col items-center gap-1 rounded-xl glass-chip glass-highlight px-1 py-1.5 transition-colors hover:bg-black/5/[0.12]"
             >
               <div className="relative flex h-3 w-3 justify-center">
                 <span
@@ -308,10 +308,10 @@ export default function SignalDock(): React.JSX.Element {
                   )}`}
                 />
               </div>
-              <span className="text-[11px] font-semibold tabular-nums text-white/85">
+              <span className="text-[11px] font-semibold tabular-nums text-foreground">
                 {summary[state]}
               </span>
-              <span className="text-[9px] tracking-wide text-white/40">{SIGNAL_LABEL[state]}</span>
+              <span className="text-[9px] tracking-wide text-foreground/40">{SIGNAL_LABEL[state]}</span>
             </div>
           ))}
         </div>
@@ -328,7 +328,7 @@ export default function SignalDock(): React.JSX.Element {
                 // Critically damped spring (Apple default: no overshoot).
                 transition={{ type: "spring", bounce: 0, duration: 0.4 }}
                 className={`pointer-events-auto rounded-xl border p-2 glass-chip glass-highlight glass-shadow ${
-                  card.level === "alert" ? "border-red-400/30" : "border-green-400/30"
+                  card.level === "alert" ? "border-red-400/40" : "border-green-400/40"
                 }`}
                 onClick={() => setCompact(false)}
                 data-testid={`dock-card-${card.level}`}
@@ -344,13 +344,13 @@ export default function SignalDock(): React.JSX.Element {
                       e.stopPropagation();
                       dismissCard(card.id);
                     }}
-                    className="shrink-0 rounded p-0.5 text-white/40 hover:text-white transition-colors"
+                    className="shrink-0 rounded p-0.5 text-foreground/40 hover:text-foreground transition-colors"
                     aria-label="关闭通知"
                   >
                     <X size={11} />
                   </button>
                 </div>
-                <div className="mt-0.5 text-[10px] text-white/60">
+                <div className="mt-0.5 text-[10px] text-foreground/60">
                   {card.msg ?? SIGNAL_LABEL[card.state]}
                 </div>
               </motion.div>
@@ -365,10 +365,10 @@ export default function SignalDock(): React.JSX.Element {
               <div key={state}>
                 <div className="flex items-center gap-1.5 px-1 py-0.5">
                   <span className={`h-1.5 w-1.5 rounded-full ${dotClass(state, count)}`} />
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     {SIGNAL_LABEL[state]}
                   </span>
-                  <span className="text-[10px] tabular-nums text-white/40">{count}</span>
+                  <span className="text-[10px] tabular-nums text-foreground/40">{count}</span>
                 </div>
                 <div className="mt-0.5 space-y-px">
                   {sessions.map((session) => {
@@ -376,13 +376,13 @@ export default function SignalDock(): React.JSX.Element {
                     return (
                       <div
                         key={session}
-                        className={`group flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-white/[0.06] transition-colors ${
+                        className={`group flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-black/5/[0.06] transition-colors ${
                           flashKey ? "animate-pulse" : ""
                         }`}
                         data-testid={`dock-session-${state}`}
                       >
                         <span className={`h-2 w-2 shrink-0 rounded-full ${SIGNAL_DOT[state]}`} />
-                        <span className="min-w-0 flex-1 truncate text-[11px] text-white/85">
+                        <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">
                           {displaySessionName(session)}
                         </span>
                         <button
@@ -391,7 +391,7 @@ export default function SignalDock(): React.JSX.Element {
                             e.stopPropagation();
                             removeSession(session);
                           }}
-                          className="shrink-0 rounded p-0.5 text-white/25 opacity-0 group-hover:opacity-100 hover:text-white transition-opacity"
+                          className="shrink-0 rounded p-0.5 text-foreground/25 opacity-0 group-hover:opacity-100 hover:text-foreground transition-opacity"
                           aria-label={`移除 ${displaySessionName(session)}`}
                           title="移除该会话的灯"
                         >
@@ -407,17 +407,17 @@ export default function SignalDock(): React.JSX.Element {
 
           {summary.total === 0 && (
             <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-              <span className="h-2.5 w-2.5 rounded-full bg-zinc-600 shadow-[0_0_6px_rgba(0,0,0,0.4)]" />
-              <div className="text-xs text-white/40">暂无任务</div>
-              <div className="text-[10px] text-white/30">打开 pi 会话后这里会亮灯</div>
+              <span className="h-2.5 w-2.5 rounded-full bg-zinc-300 shadow-[0_0_6px_rgba(0,0,0,0.1)]" />
+              <div className="text-xs text-foreground/40">暂无任务</div>
+              <div className="text-[10px] text-foreground/30">打开 pi 会话后这里会亮灯</div>
             </div>
           )}
         </div>
 
         {/* Todo list (bottom half, scrolls independently) */}
-        <div className="flex h-[38%] min-h-0 flex-col border-t border-white/[0.08]">
+        <div className="flex h-[38%] min-h-0 flex-col border-t border-black/[0.08]">
           <div className="flex items-center justify-between px-3 pt-1.5 pb-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               待办事项
             </span>
           </div>
@@ -427,12 +427,12 @@ export default function SignalDock(): React.JSX.Element {
         </div>
 
         {/* Footer: hint + resize handle (borderless window needs a manual handle) */}
-        <div className="relative border-t border-white/[0.08] px-3 py-1.5 text-[9px] tracking-wide text-white/30">
+        <div className="relative border-t border-black/[0.08] px-3 py-1.5 text-[9px] tracking-wide text-foreground/30">
           每行 = 一个 pi 会话 · 收起/展开切换窄条
           <button
             type="button"
             onMouseDown={startResize}
-            className="absolute right-1 bottom-1 h-3 w-3 cursor-se-resize text-white/25 hover:text-white/60 transition-colors"
+            className="absolute right-1 bottom-1 h-3 w-3 cursor-se-resize text-foreground/25 hover:text-foreground/60 transition-colors"
             aria-label="调整大小"
             title="拖拽调整大小"
           >

@@ -14,8 +14,8 @@ import { getCurrentWindow, LogicalPosition, LogicalSize, primaryMonitor } from "
 
 export const DOCK_FULL_WIDTH = 280;
 export const DOCK_FULL_HEIGHT = 400;
-/** 窄条高度：4 灯竖排 + 展开按钮 ≈ 206px，228 含余量（内容不被裁剪）。 */
-export const DOCK_COMPACT_HEIGHT = 232;
+/** 窄条高度：4 灯竖排 + 展开按钮 ≈ 206px，248 给足呼吸空间（边缘不紧凑）。 */
+export const DOCK_COMPACT_HEIGHT = 248;
 
 // 持久化键 — 独立 app 自己的命名空间。
 const DOCK_COMPACT_KEY = "workboard-dock.compact";
