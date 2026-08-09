@@ -25,18 +25,17 @@ import { useSignalStore } from "@/stores/signal-store";
 /** Traffic-light dot colors + labels (shared with StatusBar). */
 const SIGNAL_DOT: Record<SignalState, string> = {
   idle: "bg-zinc-500",
-  running: "bg-yellow-500 animate-pulse",
-  failed: "bg-red-500",
-  success: "bg-green-500",
+  running: "bg-yellow-400 animate-pulse",
+  failed: "bg-red-600",
+  success: "bg-green-600",
 };
-/** Dimmed (0-count) dot colors — each state's own hue at low saturation,
- *  not a flat gray. Slightly deeper than pure pastel for visibility on
- *  the light glass. */
+/** Dimmed (0-count) dot colors — same hue, lighter tint, still clearly
+ *  identifiable as red/yellow/green (not pink / dark-gold / pale-mint). */
 const SIGNAL_DIM: Record<SignalState, string> = {
   idle: "bg-slate-400",
   running: "bg-yellow-300",
-  failed: "bg-red-300",
-  success: "bg-green-300",
+  failed: "bg-red-400",
+  success: "bg-green-400",
 };
 const SIGNAL_LABEL: Record<SignalState, string> = {
   idle: "空闲",
