@@ -1,5 +1,5 @@
 import type { SignalSummary } from "@shared/types/signal.types";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useSignalStore } from "@/stores/signal-store";
 import SignalDock from "./SignalDock";
@@ -90,10 +90,10 @@ describe("SignalDock", () => {
     // low-saturation version (not a flat gray).
     render(<SignalDock />);
     for (const dimClass of [
-      "bg-red-400",
-      "bg-yellow-300",
-      "bg-slate-400",
-      "bg-green-400"
+      "bg-red-700",
+      "bg-yellow-700",
+      "bg-zinc-400",
+      "bg-green-700"
     ]) {
       expect(document.querySelectorAll(`span.${dimClass}`).length).toBeGreaterThan(0);
     }
@@ -124,71 +124,5 @@ describe("SignalDock", () => {
     expect(screen.getByTestId("signal-dock")).toBeTruthy();
   });
 
-  it("shows alert card on failed change and it persists", () => {
-    act(() => {
-      useSignalStore.getState().setSummary(SAMPLE);
-    });
-    render(<SignalDock />);
-
-    act(() => {
-      useSignalStore.getState().applyUpdate(
-        {
-          ...SAMPLE,
-          sessions: { ...SAMPLE.sessions, "/home/wa/project/deploy": "failed" },
-          failed: 1,
-        },
-        { session: "/home/wa/project/deploy", state: "failed", level: "alert", removed: false },
-      );
-    });
-
-    expect(screen.getByTestId("dock-card-alert")).toBeTruthy();
-    // The card shows the session's friendly name
-    const card = screen.getByTestId("dock-card-alert");
-    expect(card.textContent).toContain("deploy");
-    expect(card.textContent).toContain("失败");
-  });
-
-  it("does not show a card for none-level changes (process turns)", () => {
-    act(() => {
-      useSignalStore.getState().setSummary(SAMPLE);
-    });
-    render(<SignalDock />);
-
-    act(() => {
-      useSignalStore.getState().applyUpdate(SAMPLE, {
-        session: "/home/wa/project/work-board",
-        state: "running",
-        level: "none",
-        removed: false,
-      });
-    });
-
-    expect(screen.queryByTestId("dock-card-alert")).toBeNull();
-    expect(screen.queryByTestId("dock-card-info")).toBeNull();
-  });
-
-  it("dismisses a card on close", async () => {
-    act(() => {
-      useSignalStore.getState().setSummary(SAMPLE);
-    });
-    render(<SignalDock />);
-
-    act(() => {
-      useSignalStore
-        .getState()
-        .applyUpdate(
-          { ...SAMPLE },
-          { session: "/home/wa/project/deploy", state: "failed", level: "alert", removed: false },
-        );
-    });
-    expect(screen.getByTestId("dock-card-alert")).toBeTruthy();
-
-    act(() => {
-      screen.getByLabelText("关闭通知").click();
-    });
-    // AnimatePresence exit completes asynchronously — wait for removal.
-    await waitFor(() => {
-      expect(screen.queryByTestId("dock-card-alert")).toBeNull();
-    });
-  });
 });
+

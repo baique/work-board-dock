@@ -10,8 +10,7 @@
 // window and this dock listen directly (no forwarding). On mount and on focus
 // we pull the summary once to cover events fired while hidden.
 
-import type { SignalChange, SignalState, SignalSummary } from "@shared/types/signal.types";
-import { AnimatePresence, motion } from "framer-motion";
+import type { SignalState, SignalSummary } from "@shared/types/signal.types";
 import { Bell, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TodoPanel } from "@/components/workspace/TodoPanel";
@@ -25,17 +24,17 @@ import { useSignalStore } from "@/stores/signal-store";
 /** Traffic-light dot colors + labels (shared with StatusBar). */
 const SIGNAL_DOT: Record<SignalState, string> = {
   idle: "bg-zinc-500",
-  running: "bg-yellow-400 animate-pulse",
-  failed: "bg-red-600",
+  running: "bg-amber-400",
+  failed: "bg-red-500",
   success: "bg-green-600",
 };
-/** Dimmed (0-count) dot colors — same hue, lighter tint, still clearly
- *  identifiable as red/yellow/green (not pink / dark-gold / pale-mint). */
+/** Off (0-count) dots — same hue, DARKER (like an unlit traffic light):
+ *  bright red lit vs dark red off, NOT pale/pink. */
 const SIGNAL_DIM: Record<SignalState, string> = {
-  idle: "bg-slate-400",
-  running: "bg-yellow-300",
-  failed: "bg-red-400",
-  success: "bg-green-400",
+  idle: "bg-zinc-400",
+  running: "bg-yellow-700",
+  failed: "bg-red-700",
+  success: "bg-green-700",
 };
 const SIGNAL_LABEL: Record<SignalState, string> = {
   idle: "空闲",
@@ -55,27 +54,13 @@ function dotClass(state: SignalState, count: number): string {
   return SIGNAL_DOT[state];
 }
 
-interface DockCard {
-  id: number;
-  session: string;
-  state: SignalState;
-  level: "info" | "alert";
-  msg?: string;
-  /** alert cards persist until dismissed. */
-  sticky: boolean;
-}
-
-let cardSeq = 0;
-
 /** Marks an element non-draggable inside a `data-tauri-drag-region` strip. */
 const titlebarNoDragStyle = { WebkitAppRegion: "no-drag" } as React.CSSProperties;
 
 export default function SignalDock(): React.JSX.Element {
   const summary = useSignalStore((s) => s.summary);
-  const lastChange = useSignalStore((s) => s.lastChange);
   const { compact, setCompact, startResize } = useDockWindowBehavior();
   useTodoLoad();
-  const [cards, setCards] = useState<DockCard[]>([]);
   const prevSessions = useRef<Record<string, SignalState>>({});
   const isTauri = useRef(
     typeof (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ !== "undefined",
@@ -99,14 +84,6 @@ export default function SignalDock(): React.JSX.Element {
       total: 4,
     };
     useSignalStore.getState().setSummary(demo);
-    // Show one alert card so the popup is visible in the preview.
-    const change: SignalChange = {
-      session: "/home/wa/project/deploy-script",
-      state: "failed",
-      level: "alert",
-      removed: false,
-    };
-    useSignalStore.getState().applyUpdate(demo, change);
   }, []);
 
   // ── Real-time sync: initial pull + event push + refetch on focus ──
@@ -156,30 +133,6 @@ export default function SignalDock(): React.JSX.Element {
     };
   }, [isTauri]);
 
-  // ── Popup cards from lastChange (alert / info levels) ──
-  useEffect(() => {
-    const change = lastChange;
-    if (!change || change.removed) return;
-    if (change.level === "none") return;
-
-    const card: DockCard = {
-      id: ++cardSeq,
-      session: change.session,
-      state: change.state,
-      level: change.level,
-      sticky: change.level === "alert",
-    };
-    setCards((prev) => [card, ...prev].slice(0, 5));
-
-    if (change.level === "info") {
-      const t = setTimeout(() => {
-        setCards((prev) => prev.filter((c) => c.id !== card.id));
-      }, 5000);
-      return () => clearTimeout(t);
-    }
-    // alert cards stay until dismissed.
-  }, [lastChange]);
-
   // ── Flash animation when a session's state changes (row pulse) ──
   const [flashed, setFlashed] = useState<Record<string, number>>({});
   useEffect(() => {
@@ -205,10 +158,6 @@ export default function SignalDock(): React.JSX.Element {
       sessions: byState.get(state) ?? [],
     }));
   }, [summary.sessions]);
-
-  const dismissCard = (id: number): void => {
-    setCards((prev) => prev.filter((c) => c.id !== id));
-  };
 
   const removeSession = (session: string): void => {
     void clearSignal(session);
@@ -240,7 +189,7 @@ export default function SignalDock(): React.JSX.Element {
             >
               <div className="relative flex h-3.5 w-3.5 justify-center">
                 <span
-                  className={`absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.4)] ${dotClass(
+                  className={`absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full ${dotClass(
                     state,
                     summary[state],
                   )} ${state === "running" && summary[state] > 0 ? "animate-pulse" : ""}`}
@@ -310,7 +259,7 @@ export default function SignalDock(): React.JSX.Element {
             >
               <div className="relative flex h-3 w-3 justify-center">
                 <span
-                  className={`absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.35)] ${dotClass(
+                  className={`absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ${dotClass(
                     state,
                     summary[state],
                   )}`}
@@ -322,48 +271,6 @@ export default function SignalDock(): React.JSX.Element {
               <span className="text-[9px] tracking-wide text-foreground/40">{SIGNAL_LABEL[state]}</span>
             </div>
           ))}
-        </div>
-
-        {/* Popup cards (slide in from right) */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-20 flex w-44 flex-col gap-1.5 p-2">
-          <AnimatePresence>
-            {cards.map((card) => (
-              <motion.div
-                key={card.id}
-                initial={{ x: 60, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 60, opacity: 0 }}
-                // Critically damped spring (Apple default: no overshoot).
-                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                className={`pointer-events-auto rounded-xl border p-2 glass-chip glass-highlight glass-shadow ${
-                  card.level === "alert" ? "border-red-400/40" : "border-green-400/40"
-                }`}
-                onClick={() => setCompact(false)}
-                data-testid={`dock-card-${card.level}`}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className={`h-2 w-2 rounded-full ${SIGNAL_DOT[card.state]}`} />
-                  <span className="min-w-0 flex-1 truncate text-[11px] font-medium">
-                    {displaySessionName(card.session)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      dismissCard(card.id);
-                    }}
-                    className="shrink-0 rounded p-0.5 text-foreground/40 hover:text-foreground transition-colors"
-                    aria-label="关闭通知"
-                  >
-                    <X size={11} />
-                  </button>
-                </div>
-                <div className="mt-0.5 text-[10px] text-foreground/60">
-                  {card.msg ?? SIGNAL_LABEL[card.state]}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
         </div>
 
         {/* Session list (grouped by attention order) — top half, scrolls */}
