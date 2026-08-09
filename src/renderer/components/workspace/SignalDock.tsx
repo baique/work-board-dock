@@ -29,6 +29,14 @@ const SIGNAL_DOT: Record<SignalState, string> = {
   failed: "bg-red-400",
   success: "bg-green-400",
 };
+/** Dimmed (0-count) dot colors — each state's own hue at low saturation,
+ *  not a flat gray. */
+const SIGNAL_DIM: Record<SignalState, string> = {
+  idle: "bg-slate-300",
+  running: "bg-yellow-200",
+  failed: "bg-red-200",
+  success: "bg-green-200",
+};
 const SIGNAL_LABEL: Record<SignalState, string> = {
   idle: "空闲",
   running: "运行中",
@@ -40,10 +48,10 @@ const SIGNAL_ORDER: SignalState[] = ["failed", "running", "idle", "success"];
 
 /**
  * Dot class for a state, given its count. Count 0 → dimmed (light off);
- * >0 → lit color. Keeps the strip/counters readable when nothing is in a state.
+ * >0 → lit color. Dimmed keeps the state's hue at low saturation.
  */
 function dotClass(state: SignalState, count: number): string {
-  if (count === 0) return "bg-zinc-300";
+  if (count === 0) return SIGNAL_DIM[state];
   return SIGNAL_DOT[state];
 }
 
@@ -298,7 +306,7 @@ export default function SignalDock(): React.JSX.Element {
           {SIGNAL_ORDER.map((state) => (
             <div
               key={state}
-              className="flex flex-col items-center gap-1 rounded-xl glass-chip glass-highlight px-1 py-1.5 transition-colors hover:bg-black/5/[0.12]"
+              className="flex flex-col items-center gap-1 rounded-xl glass-chip glass-highlight px-1 py-1.5 transition-colors hover:bg-black/5"
             >
               <div className="relative flex h-3 w-3 justify-center">
                 <span
@@ -376,7 +384,7 @@ export default function SignalDock(): React.JSX.Element {
                     return (
                       <div
                         key={session}
-                        className={`group flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-black/5/[0.06] transition-colors ${
+                        className={`group flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-black/5 transition-colors ${
                           flashKey ? "animate-pulse" : ""
                         }`}
                         data-testid={`dock-session-${state}`}

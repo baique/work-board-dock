@@ -86,11 +86,17 @@ describe("SignalDock", () => {
   });
 
   it("dims lights whose count is zero (light off)", () => {
-    // Empty summary: every counter is 0 → every dot must be the dim color.
+    // Empty summary: every counter is 0 → each dot dims to its own hue's
+    // low-saturation version (not a flat gray).
     render(<SignalDock />);
-    const dims = document.querySelectorAll("span.bg-zinc-300");
-    // 4 counter dots + (no sessions so no group headers).
-    expect(dims.length).toBeGreaterThanOrEqual(4);
+    for (const dimClass of [
+      "bg-red-200",
+      "bg-yellow-200",
+      "bg-slate-300",
+      "bg-green-200"
+    ]) {
+      expect(document.querySelectorAll(`span.${dimClass}`).length).toBeGreaterThan(0);
+    }
   });
 
   it("collapses to compact mode showing all four lights", () => {
