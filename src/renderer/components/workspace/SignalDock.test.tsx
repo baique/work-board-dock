@@ -90,10 +90,10 @@ describe("SignalDock", () => {
     // low-saturation version (not a flat gray).
     render(<SignalDock />);
     for (const dimClass of [
-      "bg-red-200",
-      "bg-yellow-200",
-      "bg-slate-300",
-      "bg-green-200"
+      "bg-red-300",
+      "bg-yellow-300",
+      "bg-slate-400",
+      "bg-green-300"
     ]) {
       expect(document.querySelectorAll(`span.${dimClass}`).length).toBeGreaterThan(0);
     }
