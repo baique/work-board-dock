@@ -218,7 +218,7 @@ export default function SignalDock(): React.JSX.Element {
       <>
         <LiquidGlassDefs />
         <div
-          className="flex h-screen w-screen flex-col items-center justify-center gap-4 glass glass-highlight select-none"
+          className="flex h-screen w-screen flex-col items-center justify-center gap-4 py-1.5 glass glass-highlight select-none"
           data-tauri-drag-region
           data-testid="signal-dock-compact"
         >

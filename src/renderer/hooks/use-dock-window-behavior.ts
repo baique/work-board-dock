@@ -1,7 +1,7 @@
 // 挂件窗口行为（独立版）：
 //   - 启动默认展开态（不恢复上次的吸附态）
 //   - 完整记忆：展开位置（拖动时记录）+ 吸附位置（snap-y）
-//   - 收起/展开双态：真实窗口几何切换（窄条 46×210 / 展开 280×400）
+//   - 收起/展开双态：真实窗口几何切换（窄条 46×228 / 展开 280×400）
 //   - 吸附态拖动松手后自动贴回右缘（保留用户停放高度）
 //   - 拖拽（header data-tauri-drag-region）、右下角调大小手柄
 //
@@ -14,8 +14,8 @@ import { getCurrentWindow, LogicalPosition, LogicalSize, primaryMonitor } from "
 
 export const DOCK_FULL_WIDTH = 280;
 export const DOCK_FULL_HEIGHT = 400;
-/** 窄条高度：4 灯竖排 + 展开按钮 ≈ 210px。 */
-export const DOCK_COMPACT_HEIGHT = 215;
+/** 窄条高度：4 灯竖排 + 展开按钮 ≈ 206px，228 含余量（内容不被裁剪）。 */
+export const DOCK_COMPACT_HEIGHT = 232;
 
 // 持久化键 — 独立 app 自己的命名空间。
 const DOCK_COMPACT_KEY = "workboard-dock.compact";
