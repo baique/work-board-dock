@@ -97,9 +97,10 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
             return Err("signal-dock window not found".into());
         };
         unsafe {
-            // Tauri 的 hwnd() 返回 `windows` crate 的 HWND（*mut c_void）；
-            // windows-sys 的 HWND 同为 *mut c_void，as 转换后统一使用。
-            let hwnd = win.hwnd().map_err(|_| "no hwnd".to_string())? as HWND;
+            // Tauri 的 hwnd() 返回 `windows` crate 的 HWND（元组结构体
+            // HWND(pub *mut c_void)）；windows-sys 的 HWND 是 *mut c_void 别名。
+            // 取 .0 指针后转成 windows-sys 类型统一使用。
+            let hwnd = win.hwnd().map_err(|_| "no hwnd".to_string())?.0 as HWND;
             if enabled {
                 let workerw = find_desktop_workerw();
                 if workerw.is_null() {
