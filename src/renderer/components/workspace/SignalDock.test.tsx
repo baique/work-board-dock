@@ -89,12 +89,7 @@ describe("SignalDock", () => {
     // Empty summary: every counter is 0 → each dot dims to its own hue's
     // low-saturation version (not a flat gray).
     render(<SignalDock />);
-    for (const dimClass of [
-      "bg-red-800",
-      "bg-yellow-800",
-      "bg-zinc-600",
-      "bg-green-800"
-    ]) {
+    for (const dimClass of ["bg-red-800", "bg-yellow-800", "bg-zinc-600", "bg-green-800"]) {
       expect(document.querySelectorAll(`span.${dimClass}`).length).toBeGreaterThan(0);
     }
   });
@@ -123,6 +118,4 @@ describe("SignalDock", () => {
     });
     expect(screen.getByTestId("signal-dock")).toBeTruthy();
   });
-
 });
-

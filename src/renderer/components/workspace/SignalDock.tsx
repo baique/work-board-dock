@@ -11,13 +11,14 @@
 // we pull the summary once to cover events fired while hidden.
 
 import type { SignalState, SignalSummary } from "@shared/types/signal.types";
-import { Bell, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowDownToLine, Bell, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TodoPanel } from "@/components/workspace/TodoPanel";
 import { useDockWindowBehavior } from "@/hooks/use-dock-window-behavior";
 import { useTodoLoad } from "@/hooks/use-todo-load";
 import { clearSignal, getSignalSummary, subscribeSignalUpdates } from "@/lib/signal-api";
 import { displaySessionName } from "@/lib/signal-mapping";
+import { readDockedState, setDesktopDock } from "@/lib/tauri-dock-api";
 import { getCurrentWindow } from "@/lib/tauri-window";
 import { useSignalStore } from "@/stores/signal-store";
 
@@ -62,6 +63,13 @@ export default function SignalDock(): React.JSX.Element {
   const summary = useSignalStore((s) => s.summary);
   const { compact, setCompact, startResize } = useDockWindowBehavior();
   useTodoLoad();
+  const [docked, setDocked] = useState(() => readDockedState());
+
+  const toggleDocked = (): void => {
+    void setDesktopDock(!docked).then((next) => {
+      setDocked(next);
+    });
+  };
   const prevSessions = useRef<Record<string, SignalState>>({});
   const isTauri = useRef(
     typeof (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ !== "undefined",
@@ -241,6 +249,20 @@ export default function SignalDock(): React.JSX.Element {
           <div className="flex items-center gap-1">
             <button
               type="button"
+              onClick={toggleDocked}
+              className={`rounded p-1 transition-colors ${
+                docked
+                  ? "bg-black/10 text-foreground"
+                  : "text-muted-foreground hover:bg-black/5 hover:text-foreground"
+              }`}
+              aria-label="置底模式"
+              aria-pressed={docked}
+              title={docked ? "退出置底（恢复置顶）" : "置底：沉到桌面层，常驻不置顶"}
+            >
+              <ArrowDownToLine size={14} />
+            </button>
+            <button
+              type="button"
               onClick={() => setCompact(true)}
               className="rounded p-1 text-muted-foreground hover:bg-black/5 hover:text-foreground transition-colors"
               aria-label="收起"
@@ -269,7 +291,9 @@ export default function SignalDock(): React.JSX.Element {
               <span className="text-[11px] font-semibold tabular-nums text-foreground">
                 {summary[state]}
               </span>
-              <span className="text-[9px] tracking-wide text-foreground/40">{SIGNAL_LABEL[state]}</span>
+              <span className="text-[9px] tracking-wide text-foreground/40">
+                {SIGNAL_LABEL[state]}
+              </span>
             </div>
           ))}
         </div>

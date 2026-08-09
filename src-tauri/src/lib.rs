@@ -40,6 +40,104 @@ fn save_todos(app: tauri::AppHandle, todos: Vec<serde_json::Value>) -> Result<()
     std::fs::write(&path, json).map_err(|e| e.to_string())
 }
 
+/// Tauri command: dock the window to the desktop (置底模式).
+/// `enabled: true` sinks the window under the desktop shell (Progman/
+/// WorkerW) so it behaves like a desktop widget — always visible, never
+/// stealing focus, never on top of other windows. `false` restores the
+/// normal always-on-top behavior. No-op outside Windows.
+#[tauri::command]
+fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        use windows_sys::Win32::Foundation::{HWND, LPARAM, WPARAM};
+        use windows_sys::Win32::UI::WindowsAndMessaging::{
+            EnumWindows, FindWindowW, GetWindowLongPtrW, SendMessageW, SetParent, SetWindowPos,
+            HWND_BOTTOM, SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE,
+        };
+        use windows_sys::core::PCWSTR;
+
+        const GWLP_HWND_PARENT: i32 = -8;
+        const WM_SPAWN_WORKERW: u32 = 0x052C;
+
+        fn find_desktop_workerw() -> HWND {
+            unsafe {
+                // Progman hosts the desktop icon layer; sending WM_SPAWN_WORKERW
+                // forces it to create the WorkerW that covers the wallpaper.
+                let progman_class: Vec<u16> =
+                    "Progman".encode_utf16().chain(std::iter::once(0)).collect();
+                let progman = FindWindowW(PCWSTR(progman_class.as_ptr()), std::ptr::null());
+                if progman == 0 {
+                    return 0;
+                }
+                SendMessageW(progman, WM_SPAWN_WORKERW, WPARAM(0), LPARAM(0));
+                let mut workerw: HWND = 0;
+                unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> i32 {
+                    // The WorkerW whose child is SHELLDLL_DefView is the one
+                    // above the wallpaper, below all apps. The class name is
+                    // built here (fixed string, fine to rebuild per window).
+                    let def_view_class: Vec<u16> = "SHELLDLL_DefView"
+                        .encode_utf16()
+                        .chain(std::iter::once(0))
+                        .collect();
+                    let shell_view = FindWindowW(PCWSTR(def_view_class.as_ptr()), std::ptr::null());
+                    if shell_view == 0 {
+                        return 1;
+                    }
+                    if GetWindowLongPtrW(hwnd, GWLP_HWND_PARENT) == shell_view as isize {
+                        *(lparam.0 as *mut HWND) = hwnd;
+                        return 0;
+                    }
+                    1
+                }
+                EnumWindows(Some(enum_proc), LPARAM(&mut workerw as *mut HWND as isize));
+                workerw
+            }
+        }
+
+        let Some(win) = app.get_webview_window("signal-dock") else {
+            return Err("signal-dock window not found".into());
+        };
+        unsafe {
+            let hwnd = win.hwnd().ok_or("no hwnd")? as HWND;
+            if enabled {
+                let workerw = find_desktop_workerw();
+                if workerw == 0 {
+                    return Err("desktop worker not found".into());
+                }
+                // Sink under the desktop shell; no-activate so it never steals focus.
+                SetParent(hwnd, workerw);
+                SetWindowPos(
+                    hwnd,
+                    HWND_BOTTOM,
+                    0,
+                    0,
+                    0,
+                    0,
+                    SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE,
+                );
+            } else {
+                // Detach from desktop; parent back to the normal owner so the
+                // window floats again (always-on-top re-enabled by frontend).
+                SetParent(hwnd, std::ptr::null_mut());
+                SetWindowPos(
+                    hwnd,
+                    HWND_BOTTOM,
+                    0,
+                    0,
+                    0,
+                    0,
+                    SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE,
+                );
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (app, enabled);
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -87,6 +185,7 @@ pub fn run() {
             signal::clear_signal,
             load_todos,
             save_todos,
+            set_desktop_dock,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
