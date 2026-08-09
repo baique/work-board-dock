@@ -49,12 +49,11 @@ fn save_todos(app: tauri::AppHandle, todos: Vec<serde_json::Value>) -> Result<()
 fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use windows_sys::Win32::Foundation::{HWND, LPARAM, WPARAM};
+        use windows_sys::Win32::Foundation::HWND;
         use windows_sys::Win32::UI::WindowsAndMessaging::{
             EnumWindows, FindWindowW, GetWindowLongPtrW, SendMessageW, SetParent, SetWindowPos,
             HWND_BOTTOM, SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE,
         };
-        use windows_sys::core::PCWSTR;
 
         const GWLP_HWND_PARENT: i32 = -8;
         const WM_SPAWN_WORKERW: u32 = 0x052C;
@@ -65,13 +64,13 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
                 // forces it to create the WorkerW that covers the wallpaper.
                 let progman_class: Vec<u16> =
                     "Progman".encode_utf16().chain(std::iter::once(0)).collect();
-                let progman = FindWindowW(PCWSTR(progman_class.as_ptr()), std::ptr::null());
-                if progman == 0 {
-                    return 0;
+                let progman = FindWindowW(progman_class.as_ptr(), std::ptr::null());
+                if progman.is_null() {
+                    return std::ptr::null_mut();
                 }
-                SendMessageW(progman, WM_SPAWN_WORKERW, WPARAM(0), LPARAM(0));
-                let mut workerw: HWND = 0;
-                unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> i32 {
+                SendMessageW(progman, WM_SPAWN_WORKERW, 0, 0);
+                let mut workerw: HWND = std::ptr::null_mut();
+                unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: isize) -> i32 {
                     // The WorkerW whose child is SHELLDLL_DefView is the one
                     // above the wallpaper, below all apps. The class name is
                     // built here (fixed string, fine to rebuild per window).
@@ -79,17 +78,17 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
                         .encode_utf16()
                         .chain(std::iter::once(0))
                         .collect();
-                    let shell_view = FindWindowW(PCWSTR(def_view_class.as_ptr()), std::ptr::null());
-                    if shell_view == 0 {
+                    let shell_view = FindWindowW(def_view_class.as_ptr(), std::ptr::null());
+                    if shell_view.is_null() {
                         return 1;
                     }
                     if GetWindowLongPtrW(hwnd, GWLP_HWND_PARENT) == shell_view as isize {
-                        *(lparam.0 as *mut HWND) = hwnd;
+                        *(lparam as *mut HWND) = hwnd;
                         return 0;
                     }
                     1
                 }
-                EnumWindows(Some(enum_proc), LPARAM(&mut workerw as *mut HWND as isize));
+                EnumWindows(Some(enum_proc), &mut workerw as *mut HWND as isize);
                 workerw
             }
         }
@@ -101,7 +100,7 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
             let hwnd = win.hwnd().ok_or("no hwnd")? as HWND;
             if enabled {
                 let workerw = find_desktop_workerw();
-                if workerw == 0 {
+                if workerw.is_null() {
                     return Err("desktop worker not found".into());
                 }
                 // Sink under the desktop shell; no-activate so it never steals focus.
