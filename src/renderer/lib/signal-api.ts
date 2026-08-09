@@ -1,6 +1,6 @@
 // Tauri command facade for the signal light (红绿灯) backend.
 // The renderer subscribes to the pushed `signal-updated` event for real-time
-// updates; the Rust side owns the always-on HTTP endpoint (127.0.0.1:5177).
+// updates; the Rust side owns the always-on HTTP endpoint (127.0.0.1:9087).
 
 import type { SignalChange, SignalSummary, SignalUpdateEvent } from "@shared/types/signal.types";
 import { SIGNAL_UPDATE_EVENT } from "@shared/types/signal.types";

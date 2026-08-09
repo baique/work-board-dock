@@ -13,9 +13,9 @@
 
 ## 架构
 
-- **后端**：Tauri 2 + `src-tauri/src/signal.rs`（axum HTTP 127.0.0.1:5177 + TTL 30min 回收 + `signal-updated` 事件推送）
+- **后端**：Tauri 2 + `src-tauri/src/signal.rs`（axum HTTP 127.0.0.1:9087 + TTL 30min 回收 + `signal-updated` 事件推送）
 - **前端**：React 18 + TS + zustand + framer-motion，单窗口渲染 `SignalDock`
-- **协议**（与 work-board 完全一致，pi hook 零改动）：
+- **协议**：
   - `POST /api/signal` `{ session, state, msg?, level: none|info|alert }`
   - `DELETE /api/signal` `{ session }`
   - 心跳续期 + 60s 扫描 + 30min TTL 回收
@@ -36,5 +36,5 @@ bun run build:tauri    # Windows 打包
 
 ## 端口
 
-- 5177：信号 HTTP（与 work-board 冲突，不能同时跑两个 app）
+- 9087：信号 HTTP（不常用高位端口，避开常见开发端口）
 - 5180：tauri dev；5174：web 预览（避免与 work-board 的 5173 冲突）

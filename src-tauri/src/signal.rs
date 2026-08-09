@@ -1,6 +1,6 @@
 //! Signal light (红绿灯) — session status channel.
 //!
-//! A lightweight always-on HTTP endpoint on `127.0.0.1:5177` that any agent
+//! A lightweight always-on HTTP endpoint on `127.0.0.1:9087` that any agent
 //! (pi, codex, a plain shell script, ...) can POST status to via curl. Every
 //! accepted mutation pushes a real-time `signal-updated` event to the renderer
 //! (event push, no polling). `get_signal_summary` remains as an initial-sync
@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use tauri::Emitter;
 
 /// The port the signal HTTP endpoint listens on (localhost only).
-pub const SIGNAL_PORT: u16 = 5177;
+pub const SIGNAL_PORT: u16 = 9087;
 
 /// Session lifecycle states for the four-counter display.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -236,7 +236,7 @@ impl SignalStore {
 }
 
 // ---------------------------------------------------------------------------
-// HTTP endpoint (127.0.0.1:5177) — accepts POST /api/signal from any agent.
+// HTTP endpoint (127.0.0.1:9087) — accepts POST /api/signal from any agent.
 // ---------------------------------------------------------------------------
 
 use axum::{
@@ -249,7 +249,7 @@ use axum::{
 use std::net::SocketAddr;
 
 /// Read-only snapshot of the current aggregated state. Diagnostic endpoint:
-/// `curl http://127.0.0.1:5177/api/signal` — lets you verify what the backend
+/// `curl http://127.0.0.1:9087/api/signal` — lets you verify what the backend
 /// store actually holds (e.g. whether a failed state persisted) without a UI.
 async fn get_signal(
     State(store): State<Arc<SignalStore>>,
@@ -339,7 +339,7 @@ fn signal_router(store: Arc<SignalStore>) -> Router {
         .with_state(store)
 }
 
-/// Spawn the always-on signal HTTP server on 127.0.0.1:5177. Every accepted
+/// Spawn the always-on signal HTTP server on 127.0.0.1:9087. Every accepted
 /// mutation pushes a real-time `signal-updated` event (carrying the fresh
 /// summary) to the renderer so the status dots update without polling.
 pub fn spawn_signal_server(store: Arc<SignalStore>, app: tauri::AppHandle) -> tauri::async_runtime::JoinHandle<()> {

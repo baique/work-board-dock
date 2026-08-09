@@ -1,7 +1,7 @@
 # workboard-dock 项目笔记
 
 ## 项目定位
-独立置顶小窗（红绿灯挂件 + 待办），从 work-board 抽离（2026-08-09）。用户判断红绿灯不依赖终端管理器 → A 方案独立化。保留：信号 HTTP 5177 + 弹卡 + 双态窗口 + 记忆 + 待办。去掉：全部终端/项目/SSH/ACP 代码。
+独立置顶小窗（红绿灯挂件 + 待办），从 work-board 抽离（2026-08-09）。用户判断红绿灯不依赖终端管理器 → A 方案独立化。保留：信号 HTTP 9087 + 弹卡 + 双态窗口 + 记忆 + 待办。去掉：全部终端/项目/SSH/ACP 代码。
 
 ## 关键决策
 - **启动默认展开态**：compact 初始恒 false（不恢复上次吸附态）；展开位置/吸附位置单独持久化（workboard-dock.pos / workboard-dock.snap-y）
@@ -10,11 +10,11 @@
 - **待办持久化**：Rust 命令 load_todos/save_todos 直写 app_data_dir/todos.json（不用 tauri-plugin-store）
 - **i18n 已彻底移除**：TodoPanel 的 useTranslation 是死代码（t 从未使用），独立版全部硬编码中文
 
-## 协议（与 work-board 一致，pi hook 零改动）
-POST/DELETE 127.0.0.1:5177/api/signal；level: none|info|alert；心跳续期 + 60s 扫 + 30min TTL
+## 协议（独立版端口 9087）
+POST/DELETE 127.0.0.1:9087/api/signal；level: none|info|alert；心跳续期 + 60s 扫 + 30min TTL
 
 ## 端口
-- 5177 信号 HTTP（与 work-board 冲突，不能同跑）
+- 9087 信号 HTTP（不常用高位端口，避免冲突）
 - 5180 tauri dev；5174 web 预览（5173 被 work-board 占）
 
 ## 测试陷阱

@@ -2,7 +2,7 @@
 //!
 //! A lightweight always-on-top desktop widget showing every pi session's
 //! traffic light + a todo list. Two processes-worth of concerns ONLY:
-//!   - the signal HTTP endpoint (127.0.0.1:5177) that any agent can POST to
+//!   - the signal HTTP endpoint (127.0.0.1:9087) that any agent can POST to
 //!   - the always-on-top dock window (expand/collapse, snap, drag, resize)
 //!
 //! This crate is deliberately minimal: no terminal/pty/ssh/project code.
@@ -53,7 +53,7 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle().clone();
 
-            // Signal store + always-on HTTP endpoint (127.0.0.1:5177). Any pi
+            // Signal store + always-on HTTP endpoint (127.0.0.1:9087). Any pi
             // hook / script POSTs status here; every mutation pushes a
             // `signal-updated` event to the renderer (no polling).
             let signal_store = Arc::new(SignalStore::new());

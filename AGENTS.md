@@ -5,7 +5,7 @@
 ## 边界
 
 - **只做红绿灯 + 待办**：不加终端/项目/SSH/AC P 相关功能
-- **协议不变**：5177 HTTP + level + TTL，pi hook（`~/.pi/agent/extensions/traffic-light.ts`）零改动
+- **协议**：9087 HTTP + level + TTL；pi hook 端点已同步改到 9087（协议字段不变）
 - **测试**：本地只做代码通过测试 + 局部 e2e（页面正确性，MCP playwright）；窗口行为（拖拽/吸附/置顶）只能用户 Windows 实测
 - **铁律**：`bun run test <path>`（node vitest）；`bun test` 是错的
 
@@ -21,5 +21,5 @@
 
 - **useWindowState 绝不能用**（会把挂件拉成 1200×800 盖住一切）——本仓库已删
 - onMoved 程序 setPosition 会递归触发 → 600ms 冷却
-- 端口 5177 与 work-board 冲突；5173 被 work-board dev 占用，预览用 5174
+- 端口：9087 信号 HTTP（不常用高位端口）；5180 tauri dev；5174 web 预览
 - Biome exhaustive-deps 拦空依赖数组 → 用 ref 守卫（见 use-dock-window-behavior）
