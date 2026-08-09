@@ -1,0 +1,142 @@
+/* 红绿灯挂件样式 — 精简版（去终端/聊天/编辑器相关） */
+
+/* Local variable fonts (no network dependency, consistent across OS) */
+@import "@fontsource-variable/inter/index.css";
+@import "./apple.css";
+
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+@layer base {
+  :root {
+    /* Background layers - Codex dark theme */
+    --background: 0 0% 7%; /* #121212 */
+    --foreground: 0 0% 90%;
+
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 90%;
+
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 90%;
+
+    --primary: 217 91% 60%; /* #3B82F6 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 70%;
+
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 50%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 60% 42%;
+    --success-foreground: 0 0% 100%;
+    --connection: 187 70% 45%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.5rem;
+
+    /* Custom easing curves */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+    /* Sidebar - darker than main content */
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 0 0% 70%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizelegibility;
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv11", "ss01", "ss03", "cv02", "tnum";
+    font-variant-ligatures: contextual;
+    overflow: hidden;
+  }
+
+  /* Press feedback for pressable elements — instant, subtle scale. */
+  @media (hover: hover) and (pointer: fine) {
+    button:not(:disabled):not([data-press-feedback="off"]),
+    [role="button"]:not([aria-disabled="true"]):not([data-press-feedback="off"]) {
+      transition:
+        transform 100ms var(--ease-out),
+        background-color 160ms var(--ease-out),
+        color 160ms var(--ease-out),
+        border-color 160ms var(--ease-out),
+        opacity 160ms var(--ease-out);
+    }
+    button:not(:disabled):not([data-press-feedback="off"]):active,
+    [role="button"]:not([aria-disabled="true"]):not([data-press-feedback="off"]):active {
+      transform: scale(0.97);
+    }
+  }
+
+  /* Custom scrollbar — 8px reachable, inset thumb */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(0 0% 28%);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    transition: background-color 160ms var(--ease-out);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(0 0% 42%);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Reduced motion — cross-fade instead of slide/spring */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
