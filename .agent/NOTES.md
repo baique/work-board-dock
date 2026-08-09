@@ -27,3 +27,9 @@ POST/DELETE 127.0.0.1:9087/api/signal；level: none|info|alert；心跳续期 + 
 - biome --write 会把单引号改双引号（原项目配了单引号），改文件后再跑 biome 会不一致
 - icons 用 `npx tauri icon src-tauri/icons/128x128.png` 重新生成（含 icns/ico）
 - build.rs 必须精简（原版引用 dist-web 不存在会报错）
+
+## 红绿灯状态语义（2026-08-09 修正）
+- **根因**：turn_end 发 success 过早——一轮完成 ≠ 全部完成，工具循环中误显示绿
+- **修正**：turn_end 无错只清错误标记（保持黄 running），仅 agent_settled 无错才发绿
+- 事件映射：session_start→idle / input·agent_start·turn_start→running / turn_end有错→failed / tool_call block→failed / agent_settled无错→success(绿)·有错→failed
+- 时序依据（pi extensions.md）：turn (repeats while LLM calls tools) → agent_end → agent_settled（无重试/压缩/follow-up 后才算真正结束）

@@ -28,14 +28,14 @@ const SIGNAL_DOT: Record<SignalState, string> = {
   failed: "bg-red-500 ring-2 ring-white/80",
   success: "bg-green-600 ring-2 ring-white/80",
 };
-/** Off (0-count) dots — same hue, DARKER (like an unlit traffic light):
- *  bright red lit vs dark red off, NOT pale/pink. No white ring — the
- *  lit glow edge is what separates ON from OFF at a glance. */
+/** Off (0-count) dots — same hue, much DARKER (like an unlit traffic light):
+ *  bright lit vs dark off. Deep -800/-900 tones so lit colors pop against
+ *  them (dark must be dark enough for bright to read as bright). */
 const SIGNAL_DIM: Record<SignalState, string> = {
-  idle: "bg-zinc-400",
-  running: "bg-yellow-700",
-  failed: "bg-red-700",
-  success: "bg-green-700",
+  idle: "bg-zinc-600",
+  running: "bg-yellow-800",
+  failed: "bg-red-800",
+  success: "bg-green-800",
 };
 const SIGNAL_LABEL: Record<SignalState, string> = {
   idle: "空闲",
