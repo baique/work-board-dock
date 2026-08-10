@@ -51,7 +51,7 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
     {
         use windows_sys::Win32::Foundation::HWND;
         use windows_sys::Win32::UI::WindowsAndMessaging::{
-            EnumWindows, FindWindowW, GetWindowLongPtrW, SendMessageW, SetParent, SetWindowPos,
+            EnumWindows, FindWindowExW, FindWindowW, SendMessageW, SetParent, SetWindowPos,
             HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE,
         };
 
@@ -71,24 +71,29 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
                 SendMessageW(progman, WM_SPAWN_WORKERW, 0, 0);
                 let mut workerw: HWND = std::ptr::null_mut();
                 unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: isize) -> i32 {
-                    // The WorkerW whose child is SHELLDLL_DefView is the one
-                    // above the wallpaper, below all apps. The class name is
-                    // built here (fixed string, fine to rebuild per window).
+                    // The WorkerW that CONTAINS the SHELLDLL_DefView child is the
+                    // one above the wallpaper, below all apps. SHELLDLL_DefView
+                    // is a CHILD window, so FindWindowExW checks this top-level
+                    // window's children — FindWindowW (top-level only) would
+                    // always miss it.
                     let def_view_class: Vec<u16> = "SHELLDLL_DefView"
                         .encode_utf16()
                         .chain(std::iter::once(0))
                         .collect();
-                    let shell_view = FindWindowW(def_view_class.as_ptr(), std::ptr::null());
-                    if shell_view.is_null() {
-                        return 1;
-                    }
-                    if GetWindowLongPtrW(hwnd, GWLP_HWND_PARENT) == shell_view as isize {
+                    let def_view =
+                        FindWindowExW(hwnd, std::ptr::null_mut(), def_view_class.as_ptr(), std::ptr::null());
+                    if !def_view.is_null() {
                         *(lparam as *mut HWND) = hwnd;
                         return 0;
                     }
                     1
                 }
                 EnumWindows(Some(enum_proc), &mut workerw as *mut HWND as isize);
+                // Fallback: if no WorkerW exists, park under Progman itself
+                // (still below the desktop icons).
+                if workerw.is_null() {
+                    workerw = progman;
+                }
                 workerw
             }
         }
