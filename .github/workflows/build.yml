@@ -3,6 +3,7 @@ name: build
 on:
   push:
     branches: [master]
+    tags: ["v*"]
   workflow_dispatch:
   pull_request:
     branches: [master]
@@ -52,6 +53,6 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: "tiptip v__VERSION__"
-          releaseBody: "Windows 安装包（NSIS/MSI），见下方 Assets。"
-          releaseDraft: true
+          releaseBody: "tiptip Windows 安装包（NSIS/MSI），见下方 Assets。"
+          releaseDraft: false
           prerelease: false
