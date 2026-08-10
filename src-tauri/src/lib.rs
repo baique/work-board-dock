@@ -40,78 +40,36 @@ fn save_todos(app: tauri::AppHandle, todos: Vec<serde_json::Value>) -> Result<()
     std::fs::write(&path, json).map_err(|e| e.to_string())
 }
 
-/// Tauri command: dock the window to the desktop (置底模式).
-/// `enabled: true` sinks the window under the desktop shell (Progman/
-/// WorkerW) so it behaves like a desktop widget — always visible, never
-/// stealing focus, never on top of other windows. `false` restores the
-/// normal always-on-top behavior. No-op outside Windows.
+/// Tauri command: toggle 置底模式 (desktop-widget behavior).
+///
+/// `enabled: true` removes always-on-top so normal windows can cover the
+/// dock (widget behaves like a normal window parked on the desktop);
+/// `false` restores always-on-top. No-op outside Windows.
+///
+/// NOTE: an earlier version really embedded the window under the desktop
+/// shell via SetParent -> WorkerW. That froze the window: WebView2 input
+/// depends on the window being top-level (parent forwards clicks), and a
+/// WorkerW child gets no mouse/keyboard events at all. Dropped in favor of
+/// a plain z-order toggle — same visible behavior (covered by windows,
+/// still visible when everything is minimized), no freeze.
 #[tauri::command]
 fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use windows_sys::Win32::Foundation::HWND;
         use windows_sys::Win32::UI::WindowsAndMessaging::{
-            EnumWindows, FindWindowExW, FindWindowW, SendMessageW, SetParent, SetWindowPos,
-            HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE,
+            SetWindowPos, HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE,
         };
-
-        const GWLP_HWND_PARENT: i32 = -8;
-        const WM_SPAWN_WORKERW: u32 = 0x052C;
-
-        fn find_desktop_workerw() -> HWND {
-            unsafe {
-                // Progman hosts the desktop icon layer; sending WM_SPAWN_WORKERW
-                // forces it to create the WorkerW that covers the wallpaper.
-                let progman_class: Vec<u16> =
-                    "Progman".encode_utf16().chain(std::iter::once(0)).collect();
-                let progman = FindWindowW(progman_class.as_ptr(), std::ptr::null());
-                if progman.is_null() {
-                    return std::ptr::null_mut();
-                }
-                SendMessageW(progman, WM_SPAWN_WORKERW, 0, 0);
-                let mut workerw: HWND = std::ptr::null_mut();
-                unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: isize) -> i32 {
-                    // The WorkerW that CONTAINS the SHELLDLL_DefView child is the
-                    // one above the wallpaper, below all apps. SHELLDLL_DefView
-                    // is a CHILD window, so FindWindowExW checks this top-level
-                    // window's children — FindWindowW (top-level only) would
-                    // always miss it.
-                    let def_view_class: Vec<u16> = "SHELLDLL_DefView"
-                        .encode_utf16()
-                        .chain(std::iter::once(0))
-                        .collect();
-                    let def_view =
-                        FindWindowExW(hwnd, std::ptr::null_mut(), def_view_class.as_ptr(), std::ptr::null());
-                    if !def_view.is_null() {
-                        *(lparam as *mut HWND) = hwnd;
-                        return 0;
-                    }
-                    1
-                }
-                EnumWindows(Some(enum_proc), &mut workerw as *mut HWND as isize);
-                // Fallback: if no WorkerW exists, park under Progman itself
-                // (still below the desktop icons).
-                if workerw.is_null() {
-                    workerw = progman;
-                }
-                workerw
-            }
-        }
 
         let Some(win) = app.get_webview_window("signal-dock") else {
             return Err("signal-dock window not found".into());
         };
         if enabled {
-            // 1) 先脱离置顶（Tauri 去掉 WS_EX_TOPMOST），否则挂在桌面上仍置顶。
+            // 去置顶：普通窗口可覆盖挂件（置底 = 非置顶的常驻窗口）。
+            // 不碰 SetParent（WebView2 子窗口无输入 → 假死）。
             let _ = win.set_always_on_top(false);
             unsafe {
                 let hwnd = win.hwnd().map_err(|_| "no hwnd".to_string())?.0 as HWND;
-                let workerw = find_desktop_workerw();
-                if workerw.is_null() {
-                    return Err("desktop worker not found".into());
-                }
-                // 2) 再挂到桌面 WorkerW（此时窗口已非置顶，可被普通窗口覆盖）。
-                SetParent(hwnd, workerw);
                 SetWindowPos(
                     hwnd,
                     HWND_NOTOPMOST,
@@ -125,10 +83,8 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
         } else {
             unsafe {
                 let hwnd = win.hwnd().map_err(|_| "no hwnd".to_string())?.0 as HWND;
-                // 先脱离开桌面父级，恢复正常窗口层级。
-                SetParent(hwnd, std::ptr::null_mut());
                 // 显式置顶（HWND_TOPMOST）——不依赖 Tauri 的 set_always_on_top：
-                // SetParent 绕过 tao 的内部状态缓存，后者可能短路不生效。
+                // 其内部缓存可能与真实窗口不同步，可能短路不生效。
                 SetWindowPos(
                     hwnd,
                     HWND_TOPMOST,
@@ -162,6 +118,50 @@ pub fn run() {
         .plugin(tauri_plugin_log::Builder::new().build())
         .setup(|app| {
             let handle = app.handle().clone();
+
+            // Tray icon: left-click shows the dock; menu offers show/quit.
+            // (Placeholder 32x32 tray icon; Windows picks the .ico from the
+            // bundle if `default_window_icon` is not set here.)
+            let show_menu = tauri::menu::MenuBuilder::new(app)
+                .item(&tauri::menu::MenuItemBuilder::with_id("show", "显示 TIP")
+                    .build(app)?)
+                .item(&tauri::menu::MenuItemBuilder::with_id("quit", "退出")
+                    .build(app)?)
+                .build()?;
+            let tray = tauri::tray::TrayIconBuilder::new()
+                .menu(&show_menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(win) = app.get_webview_window("signal-dock") {
+                            let _ = win.show();
+                            let _ = win.set_focus();
+                        }
+                    }
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    use tauri::tray::MouseButton;
+                    use tauri::tray::MouseButtonState;
+                    if let tauri::tray::TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(win) = app.get_webview_window("signal-dock") {
+                            let _ = win.show();
+                            let _ = win.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            // Keep the tray alive for the lifetime of the app (drop would
+            // remove the icon).
+            let _ = tray;
 
             // Signal store + always-on HTTP endpoint (127.0.0.1:9087). Any pi
             // hook / script POSTs status here; every mutation pushes a

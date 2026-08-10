@@ -41,7 +41,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
       return (
         <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-[#1c1c1e] text-white">
-          <div className="text-sm text-white/80">红绿灯挂件出错了</div>
+          <div className="text-sm text-white/80">TIP 出错了</div>
           <div className="max-w-[240px] text-center text-xs text-white/50">
             {this.state.error.message}
           </div>

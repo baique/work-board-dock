@@ -1,8 +1,8 @@
 {
   "name": "workboard-dock",
-  "productName": "红绿灯",
+  "productName": "TIP",
   "version": "0.1.0",
-  "description": "红绿灯挂件 — 智能体会话状态指示器 + 待办（独立置顶小窗）",
+  "description": "TIP — 智能体会话状态指示器 + 待办（独立置顶小窗）",
   "license": "MIT",
   "private": true,
   "type": "module",

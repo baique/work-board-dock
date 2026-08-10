@@ -1,4 +1,4 @@
-// 红绿灯挂件 e2e 自动化断言（MCP playwright spec）— v2（修正断言）
+// TIP挂件 e2e 自动化断言（MCP playwright spec）— v2（修正断言）
 // ================================================================
 // 单次调用完成全部验证：渲染完整性 + 收起/展开双态 + 待办 CRUD。
 // 通过 playwright_browser_run_code_unsafe 执行（code 为 async (page) => {...}）。
@@ -25,7 +25,7 @@ const bodyText = async () => await page.evaluate(() => document.body.innerText);
 // ── 1. 展开态渲染完整性 ──
 await page.waitForTimeout(1200);
 let text = await bodyText();
-check('展开态 header「红绿灯」', text.includes('红绿灯'));
+check('展开态 header「TIP」', text.includes('TIP'));
 check('header 总数徽标 4', text.includes('\n4\n'));
 for (const label of ['失败', '运行中', '空闲', '成功']) {
   check(`四计数「${label}」`, text.includes(label));
@@ -45,7 +45,7 @@ await page.waitForTimeout(400);
 text = await bodyText();
 check('收起后「展开」按钮', (await page.getByRole('button', { name: '展开' }).count()) > 0);
 check('窄条无「待办事项」', !text.includes('待办事项'));
-check('窄条无「红绿灯」header', !text.includes('红绿灯'));
+check('窄条无「TIP」header', !text.includes('TIP'));
 // 窄条状态名是 aria-label（role=group），可见文本只有计数数字
 for (const label of ['失败', '运行中', '空闲', '成功']) {
   check(`窄条四灯「${label}」`, (await page.getByRole('group', { name: label }).count()) > 0);
@@ -55,7 +55,7 @@ for (const label of ['失败', '运行中', '空闲', '成功']) {
 await page.getByRole('button', { name: '展开' }).click();
 await page.waitForTimeout(400);
 text = await bodyText();
-check('展开恢复「红绿灯」header', text.includes('红绿灯'));
+check('展开恢复「TIP」header', text.includes('TIP'));
 check('展开恢复「待办事项」', text.includes('待办事项'));
 
 // ── 4. 待办 CRUD ──
