@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>红绿灯 · 方案 A 光谱带（交互细化）</title>
+<style>
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-inout: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --red: #ef4444; --yellow: #fbbf24; --green: #22c55e; --blue: #60a5fa;
+  --bg: #101216;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "SF Pro Text", -apple-system, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg); color: #e8eaf0;
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* 顶栏 */
+.topbar { display: flex; align-items: center; gap: 14px; padding: 10px 18px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(16,18,22,0.9); backdrop-filter: blur(16px); z-index: 60; }
+.topbar h1 { font-size: 13px; font-weight: 600; }
+.topbar .lvl { display: flex; align-items: center; gap: 6px; font-size: 10px; color: rgba(232,234,240,0.4); }
+.topbar .lvl b { color: rgba(232,234,240,0.75); font-weight: 600; }
+.topbar .lvl i { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.25); }
+.topbar .lvl i.on { background: var(--yellow); }
+.tabs { display: flex; gap: 3px; background: rgba(255,255,255,0.06); padding: 3px; border-radius: 10px; margin-left: auto; }
+.tab { border: 0; background: transparent; color: rgba(232,234,240,0.55); font-size: 12px; padding: 5px 14px; border-radius: 8px; cursor: pointer; transition: all 140ms var(--ease-out); }
+.tab:hover { color: #fff; }
+.tab.active { background: rgba(255,255,255,0.14); color: #fff; }
+.tab:active { transform: scale(0.96); }
+
+/* 舞台 */
+.stage { position: relative; flex: 1; overflow: hidden; }
+.screen-bg { position: absolute; inset: 0; background: linear-gradient(165deg, #171a22 0%, #1c1f2b 50%, #15171f 100%); }
+
+/* 左栏：交互说明 */
+.guide {
+  position: absolute; left: 30px; top: 50%; transform: translateY(-50%);
+  width: 240px; display: flex; flex-direction: column; gap: 10px;
+}
+.guide .step { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 11px 13px; font-size: 11px; color: rgba(232,234,240,0.55); transition: all 200ms var(--ease-out); }
+.guide .step b { display: block; color: #e8eaf0; font-size: 12px; margin-bottom: 3px; }
+.guide .step.hot { border-color: rgba(251,191,36,0.4); background: rgba(251,191,36,0.07); }
+.guide .step.hot b { color: #fde68a; }
+.guide .step.done { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.06); }
+.guide .step.done b { color: #86efac; }
+
+/* ═══ 方案 A 主体 ═══ */
+.spec-area { position: absolute; top: 0; right: 0; bottom: 0; width: 260px; z-index: 40; pointer-events: none; }
+
+/* 色带（常驻） */
+.spec-band {
+  position: absolute; top: 50%; right: 0; transform: translateY(-50%);
+  width: 9px; display: flex; flex-direction: column; gap: 3px;
+  padding: 4px 0; pointer-events: auto; cursor: pointer;
+  border-radius: 7px 0 0 7px;
+}
+.spec-seg { height: 22px; border-radius: 5px 0 0 5px; transition: all 200ms var(--ease-out); position: relative; }
+.spec-seg.fail { background: var(--red); animation: segPulse 1.2s ease infinite; }
+.spec-seg.run { background: var(--yellow); }
+.spec-seg.idle { background: var(--blue); opacity: 0.55; }
+.spec-seg.done { background: var(--green); opacity: 0.45; }
+.spec-seg:hover { width: 15px; opacity: 1; }
+.spec-seg.hot { width: 15px; opacity: 1; outline: 2px solid rgba(255,255,255,0.5); }
+@keyframes segPulse { 0%,100% { opacity: 1; box-shadow: 0 0 14px currentColor; } 50% { opacity: 0.35; box-shadow: none; } }
+
+/* 任务列表（悬停/点击展开） */
+.spec-panel {
+  position: absolute; top: 50%; right: 16px; transform: translateY(-50%);
+  width: 236px;
+  background: rgba(16,18,22,0.92); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px; overflow: hidden;
+  backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.55);
+  opacity: 0; pointer-events: none;
+  transform: translateY(-50%) translateX(14px);
+  transition: all 260ms var(--ease-drawer);
+}
+.stage.spec-hover .spec-panel, .stage.spec-pinned .spec-panel { opacity: 1; pointer-events: auto; transform: translateY(-50%) translateX(0); }
+.stage.spec-pinned .spec-band { width: 13px; }
+
+/* 面板头：摘要 + 置顶/置底 */
+.spec-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.spec-head .summary { font-size: 10px; color: rgba(232,234,240,0.45); display: flex; gap: 8px; align-items: center; }
+.spec-head .summary .k { display: flex; align-items: center; gap: 4px; }
+.spec-head .summary .k i { width: 7px; height: 7px; border-radius: 50%; }
+.spec-head .pin-btn {
+  margin-left: auto; border: 0; cursor: pointer; font-size: 9px; padding: 4px 8px; border-radius: 6px;
+  color: rgba(232,234,240,0.6); background: rgba(255,255,255,0.08); transition: all 140ms var(--ease-out);
+  display: flex; align-items: center; gap: 4px;
+}
+.spec-head .pin-btn:hover { background: rgba(255,255,255,0.16); color: #fff; }
+.spec-head .pin-btn.on { background: rgba(96,165,250,0.25); color: #bfdbfe; }
+
+/* 任务行 */
+.spec-list { padding: 5px; max-height: 300px; overflow-y: auto; }
+.spec-row { display: flex; align-items: center; gap: 9px; padding: 8px 9px; border-radius: 9px; font-size: 11px; cursor: pointer; position: relative; transition: background 150ms var(--ease-out); }
+.spec-row:hover { background: rgba(255,255,255,0.07); }
+.spec-row.hot { background: rgba(255,255,255,0.1); outline: 1px solid rgba(255,255,255,0.15); }
+.spec-row .d { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.spec-row .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spec-row .t { font-size: 9px; color: rgba(232,234,240,0.4); flex-shrink: 0; }
+.spec-row .act { display: none; gap: 4px; }
+.spec-row:hover .act { display: flex; }
+.spec-row .act button { border: 0; cursor: pointer; font-size: 9px; padding: 3px 8px; border-radius: 6px; color: rgba(232,234,240,0.75); background: rgba(255,255,255,0.1); transition: all 130ms var(--ease-out); }
+.spec-row .act button:hover { background: rgba(255,255,255,0.2); color: #fff; }
+.spec-row.fail .act .retry { background: rgba(239,68,68,0.2); color: #fca5a5; }
+.spec-row.fail .act .retry:hover { background: rgba(239,68,68,0.35); }
+.spec-row.fail { animation: rowGlow 2s ease infinite; }
+@keyframes rowGlow { 0%,100% { background: transparent; } 50% { background: rgba(239,68,68,0.07); } }
+
+/* 行内详情（点击展开） */
+.spec-detail { display: none; padding: 0 9px 8px 27px; font-size: 10px; color: rgba(232,234,240,0.5); }
+.spec-row.open + .spec-detail { display: block; }
+.spec-detail .meta { display: flex; gap: 10px; margin-bottom: 6px; }
+.spec-detail .ops { display: flex; gap: 5px; }
+.spec-detail .ops button { border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: rgba(232,234,240,0.75); font-size: 9px; padding: 3px 9px; border-radius: 6px; cursor: pointer; transition: all 130ms var(--ease-out); }
+.spec-detail .ops button:hover { background: rgba(255,255,255,0.14); }
+.spec-detail .ops .danger { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+
+/* 底部控制 */
+.controls { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; background: rgba(16,18,22,0.92); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 7px 10px; z-index: 60; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+.btn { border: 0; cursor: pointer; font-size: 11px; padding: 5px 12px; border-radius: 8px; color: rgba(232,234,240,0.75); background: rgba(255,255,255,0.08); transition: all 130ms var(--ease-out); }
+.btn:hover { background: rgba(255,255,255,0.16); color: #fff; }
+.btn:active { transform: scale(0.96); }
+.sep { width: 1px; height: 22px; background: rgba(255,255,255,0.1); }
+.toggle-wrap { display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(232,234,240,0.55); }
+.switch { width: 34px; height: 19px; border-radius: 10px; background: rgba(255,255,255,0.12); position: relative; cursor: pointer; transition: background 200ms var(--ease-out); }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; transition: transform 200ms var(--ease-drawer); }
+.switch.on { background: var(--blue); }
+.switch.on::after { transform: translateX(15px); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🚦 方案 A · 光谱带 — 交互细化</h1>
+  <div class="lvl"><i class="on"></i> 当前层级：<b id="lvlName">常态</b></div>
+  <div class="tabs">
+    <button class="tab active" data-s="spec">A 光谱带（细化）</button>
+    <button class="tab" data-s="queue">B 队列</button>
+    <button class="tab" data-s="focus">C 聚焦</button>
+  </div>
+</div>
+
+<div class="stage top" id="stage">
+  <div class="screen-bg"></div>
+
+  <!-- 左栏：交互层级说明 -->
+  <div class="guide">
+    <div class="step" data-g="l1"><b>层级 1 · 常态</b>色带贴边，失败段脉动，其余微光</div>
+    <div class="step" data-g="l2"><b>层级 2 · 悬停</b>色带 → 滑出任务列表，行↔段联动高亮</div>
+    <div class="step" data-g="l3"><b>层级 3 · 点击</b>锁定列表，头部摘要 + 置顶/置底</div>
+    <div class="step" data-g="l4"><b>层级 4 · 操作</b>行内「重试/忽略」，点击行展开详情</div>
+  </div>
+
+  <!-- 方案 A 主体 -->
+  <div class="scheme scheme-spec active">
+    <div class="spec-area">
+      <div class="spec-band" id="specBand"></div>
+      <div class="spec-panel">
+        <div class="spec-head">
+          <div class="summary" id="summary"></div>
+          <button class="pin-btn" id="pinBtn">📌 固定</button>
+        </div>
+        <div class="spec-list" id="specList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案 B/C 保留占位 -->
+  <div class="scheme scheme-queue" style="position:absolute;inset:0;display:none">
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:rgba(232,234,240,0.5)">方案 B · 任务队列（见上一版，方案 A 入选细化）</div>
+  </div>
+  <div class="scheme scheme-focus" style="position:absolute;inset:0;display:none">
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:rgba(232,234,240,0.5)">方案 C · 异常聚焦（见上一版，方案 A 入选细化）</div>
+  </div>
+</div>
+
+<!-- 底部控制 -->
+<div class="controls">
+  <span style="font-size:10px;color:rgba(232,234,240,0.4)">模拟：</span>
+  <button class="btn" data-t="deploy-script" data-s="run">deploy ▶</button>
+  <button class="btn" data-t="deploy-script" data-s="fail">deploy ✕</button>
+  <button class="btn" data-t="deploy-script" data-s="done">deploy ✓</button>
+  <div class="sep"></div>
+  <button class="btn" data-t="code-review" data-s="run">review ▶</button>
+  <button class="btn" data-t="code-review" data-s="fail">review ✕</button>
+  <button class="btn" data-t="code-review" data-s="done">review ✓</button>
+  <div class="sep"></div>
+  <div class="toggle-wrap">置底 <div class="switch" id="docked"></div> 置顶</div>
+</div>
+
+<script>
+let tasks = [
+  { id: "deploy-script", name: "部署脚本", state: "run" },
+  { id: "code-review", name: "代码审查", state: "fail" },
+  { id: "docs-gen", name: "文档生成", state: "done" },
+  { id: "data-sync", name: "数据同步", state: "idle" },
+  { id: "unit-tests", name: "单元测试", state: "run" },
+  { id: "release", name: "发布流程", state: "fail" },
+];
+const COLORS = { fail: "#ef4444", run: "#fbbf24", idle: "#60a5fa", done: "#22c55e" };
+const LABELS = { fail: "失败", run: "运行中", idle: "空闲", done: "成功" };
+const ORDER = ["fail", "run", "idle", "done"];
+const sorted = () => [...tasks].sort((a,b) => ORDER.indexOf(a.state) - ORDER.indexOf(b.state));
+let pinned = false;
+let hotSeg = null;   // 悬停联动的段 id
+let hotRow = null;   // 悬停联动的行 id
+let openRow = null;  // 点击展开详情的行 id
+
+/* ── 层级标记 ── */
+function setLevel(lv) {
+  const names = { l1: "常态", l2: "悬停预览", l3: "固定展开", l4: "行操作" };
+  document.getElementById("lvlName").textContent = names[lv];
+  document.querySelectorAll(".guide .step").forEach(s => { s.classList.remove("hot","done"); });
+  const order = ["l1","l2","l3","l4"];
+  order.forEach((o,i) => {
+    const el = document.querySelector(`.guide [data-g="${o}"]`);
+    if (o === lv) el.classList.add("hot");
+    else if (order.indexOf(lv) > i) el.classList.add("done");
+  });
+}
+
+/* ── 渲染 ── */
+function renderBand() {
+  const band = document.getElementById("specBand");
+  band.innerHTML = sorted().map(t => `
+    <div class="spec-seg ${t.state} ${hotSeg === t.id ? "hot" : ""}" data-id="${t.id}" title="${t.name}"></div>`).join("");
+}
+function renderList() {
+  const list = document.getElementById("specList");
+  list.innerHTML = sorted().map(t => `
+    <div class="spec-row ${t.state} ${hotRow === t.id ? "hot" : ""} ${openRow === t.id ? "open" : ""}" data-id="${t.id}">
+      <span class="d" style="background:${COLORS[t.state]}"></span>
+      <span class="n">${t.name}</span>
+      <span class="t">${LABELS[t.state]}</span>
+      <span class="act">
+        ${t.state === "fail" ? `<button class="retry" data-act="retry">重试</button><button data-act="ignore">忽略</button>` : ""}
+        ${t.state === "run" ? `<button data-act="open">打开</button>` : ""}
+      </span>
+    </div>
+    <div class="spec-detail">
+      <div class="meta"><span>会话 #${t.id.split("-").pop()}</span><span>${t.state === "fail" ? "退出码 1" : t.state === "run" ? "已运行 2 分钟" : "3 分钟前"}</span></div>
+      <div class="ops">
+        ${t.state === "fail" ? `<button class="danger" data-detail="retry">重试</button><button data-detail="dismiss">标记已读</button>` : ""}
+        ${t.state === "run" ? `<button data-detail="open">打开会话</button><button data-detail="kill">终止</button>` : ""}
+        <button data-detail="close">收起</button>
+      </div>
+    </div>`).join("");
+
+  // 摘要
+  const cnt = s => tasks.filter(t => t.state === s).length;
+  document.getElementById("summary").innerHTML = `
+    <span class="k"><i style="background:var(--red)"></i>${cnt("fail")}</span>
+    <span class="k"><i style="background:var(--yellow)"></i>${cnt("run")}</span>
+    <span class="k"><i style="background:var(--blue)"></i>${cnt("idle")}</span>
+    <span class="k"><i style="background:var(--green)"></i>${cnt("done")}</span>`;
+
+  // 行事件
+  list.querySelectorAll(".spec-row").forEach(row => {
+    const id = row.dataset.id;
+    row.addEventListener("mouseenter", () => { hotRow = id; hotSeg = id; renderBand(); });
+    row.addEventListener("mouseleave", () => { hotRow = null; hotSeg = null; renderBand(); });
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".act")) return; // 操作按钮不展开详情
+      openRow = openRow === id ? null : id;
+      setLevel("l4");
+      renderList();
+    });
+    row.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const act = b.dataset.act;
+      if (act === "retry") { taskById(id).state = "run"; renderAll(); }
+      if (act === "ignore") { taskById(id).state = "done"; renderAll(); }
+      if (act === "open") { /* 未来：打开会话 */ }
+    }));
+  });
+  list.querySelectorAll("[data-detail]").forEach(b => b.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const act = b.dataset.detail;
+    const id = b.closest(".spec-detail").previousElementSibling.dataset.id;
+    if (act === "close") { openRow = null; renderList(); }
+    if (act === "retry") { taskById(id).state = "run"; openRow = null; renderAll(); }
+    if (act === "dismiss") { taskById(id).state = "done"; openRow = null; renderAll(); }
+  }));
+}
+function taskById(id) { return tasks.find(t => t.id === id); }
+function renderAll() { renderBand(); renderList(); }
+
+/* ── 色带事件（层级 1→2→3）：hover 挂在容器上，色带↔面板间不断开 ── */
+const specArea = document.querySelector(".spec-area");
+const band = document.getElementById("specBand");
+specArea.addEventListener("mouseenter", () => {
+  if (!pinned) { stage.classList.add("spec-hover"); setLevel("l2"); }
+});
+specArea.addEventListener("mouseleave", () => {
+  if (!pinned) { stage.classList.remove("spec-hover"); setLevel("l1"); }
+});
+band.addEventListener("click", () => {
+  pinned = !pinned;
+  stage.classList.toggle("spec-pinned", pinned);
+  stage.classList.toggle("spec-hover", !pinned);
+  setLevel(pinned ? "l3" : "l2");
+  document.getElementById("pinBtn").classList.toggle("on", pinned);
+  document.getElementById("pinBtn").textContent = pinned ? "📌 已固定" : "📌 固定";
+});
+// 点击色带上的段 → 直达该任务
+document.getElementById("specBand").addEventListener("click", (e) => {
+  const seg = e.target.closest(".spec-seg");
+  if (seg) { openRow = seg.dataset.id; hotSeg = seg.dataset.id; setLevel("l4"); renderAll(); }
+});
+// 固定按钮
+document.getElementById("pinBtn").addEventListener("click", () => band.click());
+
+/* ── 方案切换 ── */
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+  t.classList.add("active");
+  document.querySelectorAll(".scheme").forEach(s => s.style.display = "none");
+  document.querySelector(".scheme-" + t.dataset.s).style.display = "block";
+}));
+
+/* ── 状态模拟 ── */
+document.querySelectorAll(".btn").forEach(b => b.addEventListener("click", () => {
+  const t = taskById(b.dataset.t);
+  if (t) { t.state = b.dataset.s; renderAll(); }
+}));
+
+/* ── 置顶/置底 ── */
+document.getElementById("docked").addEventListener("click", function() {
+  this.classList.toggle("on");
+  stage.classList.toggle("bottom", this.classList.contains("on"));
+  stage.classList.toggle("top", !this.classList.contains("on"));
+});
+
+renderAll();
+</script>
+</body>
+</html>

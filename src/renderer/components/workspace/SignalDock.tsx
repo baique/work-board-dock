@@ -11,7 +11,7 @@
 // we pull the summary once to cover events fired while hidden.
 
 import type { SignalState, SignalSummary } from "@shared/types/signal.types";
-import { ArrowDownToLine, Bell, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowDownToLine, Bell, ChevronLeft, ChevronRight, Pin, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TodoPanel } from "@/components/workspace/TodoPanel";
 import { useDockWindowBehavior } from "@/hooks/use-dock-window-behavior";
@@ -252,14 +252,14 @@ export default function SignalDock(): React.JSX.Element {
               onClick={toggleDocked}
               className={`rounded p-1 transition-colors ${
                 docked
-                  ? "bg-black/10 text-foreground"
-                  : "text-muted-foreground hover:bg-black/5 hover:text-foreground"
+                  ? "bg-amber-500/15 text-amber-700"
+                  : "bg-primary/15 text-primary"
               }`}
-              aria-label="置底模式"
+              aria-label={docked ? "已置底：点击恢复置顶" : "已置顶：点击切换置底"}
               aria-pressed={docked}
-              title={docked ? "退出置底（恢复置顶）" : "置底：沉到桌面层，常驻不置顶"}
+              title={docked ? "已置底（桌面小组件）· 点击恢复置顶" : "已置顶（悬浮于所有窗口之上）· 点击切换置底"}
             >
-              <ArrowDownToLine size={14} />
+              {docked ? <ArrowDownToLine size={14} /> : <Pin size={14} />}
             </button>
             <button
               type="button"
