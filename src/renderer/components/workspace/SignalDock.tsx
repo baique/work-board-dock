@@ -237,7 +237,7 @@ export default function SignalDock(): React.JSX.Element {
             onClick={() => handleCompact(false)}
             className="mt-1 rounded-full p-1.5 text-muted-foreground hover:bg-black/5 hover:text-foreground transition-colors"
             aria-label="展开"
-            title="展开TIP"
+            title="展开tiptip"
             style={titlebarNoDragStyle}
           >
             <ChevronLeft size={14} />
@@ -262,7 +262,7 @@ export default function SignalDock(): React.JSX.Element {
         >
           <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-foreground">
             <Bell size={13} className="text-foreground/60" />
-            TIP
+            tiptip
             <span className="ml-1 rounded-full bg-black/5 px-1.5 py-0.5 text-[10px] tabular-nums tracking-wide text-foreground/70">
               {summary.total}
             </span>

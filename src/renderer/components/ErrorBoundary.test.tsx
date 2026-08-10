@@ -13,7 +13,7 @@ describe("ErrorBoundary", () => {
         <Bomb />
       </ErrorBoundary>,
     );
-    expect(screen.getByText("TIP 出错了")).toBeTruthy();
+    expect(screen.getByText("tiptip 出错了")).toBeTruthy();
     expect(screen.getByText("boom")).toBeTruthy();
     expect(screen.getByText("重试")).toBeTruthy();
   });
@@ -33,6 +33,6 @@ describe("ErrorBoundary", () => {
         <Bomb />
       </ErrorBoundary>,
     );
-    expect(screen.getByText("TIP 出错了")).toBeTruthy();
+    expect(screen.getByText("tiptip 出错了")).toBeTruthy();
   });
 });

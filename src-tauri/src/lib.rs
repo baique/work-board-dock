@@ -120,15 +120,20 @@ pub fn run() {
             let handle = app.handle().clone();
 
             // Tray icon: left-click shows the dock; menu offers show/quit.
-            // (Placeholder 32x32 tray icon; Windows picks the .ico from the
-            // bundle if `default_window_icon` is not set here.)
+            // Simple white "T" glyph on transparent bg, embedded at compile
+            // time (include_bytes!) — no runtime file dependency.
+            let tray_icon = tauri::image::Image::from_bytes(
+                include_bytes!("../icons/tray-t.png"),
+            )
+            .map_err(|e| e.to_string())?;
             let show_menu = tauri::menu::MenuBuilder::new(app)
-                .item(&tauri::menu::MenuItemBuilder::with_id("show", "显示 TIP")
+                .item(&tauri::menu::MenuItemBuilder::with_id("show", "显示 tiptip")
                     .build(app)?)
                 .item(&tauri::menu::MenuItemBuilder::with_id("quit", "退出")
                     .build(app)?)
                 .build()?;
             let tray = tauri::tray::TrayIconBuilder::new()
+                .icon(tray_icon)
                 .menu(&show_menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {

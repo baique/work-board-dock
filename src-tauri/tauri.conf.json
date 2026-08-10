@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "TIP",
+  "productName": "tiptip",
   "version": "0.1.0",
   "identifier": "com.workboard.dock",
   "build": {
@@ -15,7 +15,7 @@
       {
         "label": "signal-dock",
         "url": "tauri-index.html",
-        "title": "TIP",
+        "title": "tiptip",
         "width": 280,
         "height": 400,
         "minWidth": 120,
@@ -47,7 +47,7 @@
       "icons/icon.ico"
     ],
     "category": "Productivity",
-    "shortDescription": "TIP - 智能体会话状态指示器",
+    "shortDescription": "tiptip - 智能体会话状态指示器",
     "longDescription": "独立置顶小窗，实时显示 pi 等智能体会话状态（失败/运行中/空闲/成功）并支持待办管理。",
     "windows": {
       "nsis": {
