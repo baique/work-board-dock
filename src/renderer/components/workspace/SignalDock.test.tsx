@@ -18,6 +18,10 @@ vi.mock("@/lib/tauri-window", () => ({
   getCurrentWindowLabel: vi.fn(() => "signal-dock"),
 }));
 
+vi.mock("@/lib/tauri-dock-api", () => ({
+  setDesktopDock: vi.fn(async (enabled: boolean) => enabled),
+}));
+
 const EMPTY: SignalSummary = {
   sessions: {},
   idle: 0,
@@ -117,5 +121,36 @@ describe("SignalDock", () => {
       screen.getByLabelText("展开").click();
     });
     expect(screen.getByTestId("signal-dock")).toBeTruthy();
+  });
+
+  it("置底后收起自动回置顶，展开还原置底", async () => {
+    const { setDesktopDock } = await import("@/lib/tauri-dock-api");
+    const mockSet = vi.mocked(setDesktopDock);
+    act(() => {
+      useSignalStore.getState().setSummary(SAMPLE);
+    });
+    render(<SignalDock />);
+
+    // 置底（默认置顶 → 点击切换为置底）
+    await act(async () => {
+      screen.getByLabelText("已置顶：点击切换置底").click();
+    });
+    expect(screen.getByLabelText("已置底：点击恢复置顶")).toBeTruthy();
+
+    // 置底状态下收起 → 自动回置顶（窄条必须置顶可见）。窄条无置顶按钮，
+    // 通过 mock 调用断言 setDesktopDock(false) 已发出。
+    await act(async () => {
+      screen.getByLabelText("收起").click();
+    });
+    expect(screen.getByTestId("signal-dock-compact")).toBeTruthy();
+    expect(mockSet).toHaveBeenLastCalledWith(false);
+
+    // 展开 → 还原收起前的置底状态（按钮回到置底态）
+    await act(async () => {
+      screen.getByLabelText("展开").click();
+    });
+    expect(screen.getByTestId("signal-dock")).toBeTruthy();
+    expect(mockSet).toHaveBeenLastCalledWith(true);
+    expect(screen.getByLabelText("已置底：点击恢复置顶")).toBeTruthy();
   });
 });

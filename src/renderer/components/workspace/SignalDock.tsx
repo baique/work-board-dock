@@ -64,11 +64,32 @@ export default function SignalDock(): React.JSX.Element {
   const { compact, setCompact, startResize } = useDockWindowBehavior();
   useTodoLoad();
   const [docked, setDocked] = useState(false);
+  // 置底仅展开态有意义：置底状态下收起 → 先回置顶（窄条被覆盖找不到）；
+  // 展开 → 还原收起前的置底/置顶状态。用 ref 记住收起前的 docked。
+  const dockedBeforeCompact = useRef(false);
 
   const toggleDocked = (): void => {
     void setDesktopDock(!docked).then((next) => {
       setDocked(next);
     });
+  };
+
+  // 包装 setCompact：收起时若置底则先回置顶，展开时还原。
+  const handleCompact = (v: boolean): void => {
+    if (v) {
+      // 收起（切窄条）：记住当前 docked；若置底，先回置顶。
+      dockedBeforeCompact.current = docked;
+      if (docked) {
+        void setDesktopDock(false).then((next) => setDocked(next));
+      }
+    } else {
+      // 展开：还原收起前的状态（置底 or 置顶）。
+      if (dockedBeforeCompact.current) {
+        dockedBeforeCompact.current = false;
+        void setDesktopDock(true).then((next) => setDocked(next));
+      }
+    }
+    setCompact(v);
   };
   const prevSessions = useRef<Record<string, SignalState>>({});
   const isTauri = useRef(
@@ -213,7 +234,7 @@ export default function SignalDock(): React.JSX.Element {
           {/* Expand control — no-drag so the click is not swallowed by dragging. */}
           <button
             type="button"
-            onClick={() => setCompact(false)}
+            onClick={() => handleCompact(false)}
             className="mt-1 rounded-full p-1.5 text-muted-foreground hover:bg-black/5 hover:text-foreground transition-colors"
             aria-label="展开"
             title="展开TIP"
@@ -263,7 +284,7 @@ export default function SignalDock(): React.JSX.Element {
             </button>
             <button
               type="button"
-              onClick={() => setCompact(true)}
+              onClick={() => handleCompact(true)}
               className="rounded p-1 text-muted-foreground hover:bg-black/5 hover:text-foreground transition-colors"
               aria-label="收起"
               title="收起到窄条（手动）"
