@@ -18,7 +18,7 @@ import { useDockWindowBehavior } from "@/hooks/use-dock-window-behavior";
 import { useTodoLoad } from "@/hooks/use-todo-load";
 import { clearSignal, getSignalSummary, subscribeSignalUpdates } from "@/lib/signal-api";
 import { displaySessionName } from "@/lib/signal-mapping";
-import { readDockedState, setDesktopDock } from "@/lib/tauri-dock-api";
+import { setDesktopDock } from "@/lib/tauri-dock-api";
 import { getCurrentWindow } from "@/lib/tauri-window";
 import { useSignalStore } from "@/stores/signal-store";
 
@@ -63,7 +63,7 @@ export default function SignalDock(): React.JSX.Element {
   const summary = useSignalStore((s) => s.summary);
   const { compact, setCompact, startResize } = useDockWindowBehavior();
   useTodoLoad();
-  const [docked, setDocked] = useState(() => readDockedState());
+  const [docked, setDocked] = useState(false);
 
   const toggleDocked = (): void => {
     void setDesktopDock(!docked).then((next) => {
