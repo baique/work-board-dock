@@ -52,7 +52,7 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
         use windows_sys::Win32::Foundation::HWND;
         use windows_sys::Win32::UI::WindowsAndMessaging::{
             EnumWindows, FindWindowW, GetWindowLongPtrW, SendMessageW, SetParent, SetWindowPos,
-            HWND_NOTOPMOST, SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE,
+            HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE,
         };
 
         const GWLP_HWND_PARENT: i32 = -8;
@@ -122,9 +122,11 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
                 let hwnd = win.hwnd().map_err(|_| "no hwnd".to_string())?.0 as HWND;
                 // 先脱离开桌面父级，恢复正常窗口层级。
                 SetParent(hwnd, std::ptr::null_mut());
+                // 显式置顶（HWND_TOPMOST）——不依赖 Tauri 的 set_always_on_top：
+                // SetParent 绕过 tao 的内部状态缓存，后者可能短路不生效。
                 SetWindowPos(
                     hwnd,
-                    HWND_NOTOPMOST,
+                    HWND_TOPMOST,
                     0,
                     0,
                     0,
@@ -132,7 +134,7 @@ fn set_desktop_dock(app: tauri::AppHandle, enabled: bool) -> Result<(), String> 
                     SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE,
                 );
             }
-            // 再恢复置顶（Tauri 层）。
+            // 同步 Tauri 内部状态（若内部已缓存 false，这里纠正为 true）。
             let _ = win.set_always_on_top(true);
         }
     }
